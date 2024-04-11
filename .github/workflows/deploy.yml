@@ -24,7 +24,6 @@ jobs:
         # install npm dependencies, then compile css and js
         run: |
           npm install
-          npm run prod
 
       # configure runner with right php version
       - name: Configure PHP 8.1
@@ -108,9 +107,6 @@ jobs:
           # Share storage between different releases, we don't want to override server files, so we remove it from our release
           script: |
             tar xzf ${{ matrix.server.path }}/artifacts/${GITHUB_SHA}.tar.gz -C "${{ matrix.server.path }}/html"
-
-            rm -rf ${{ matrix.server.path }}/html/storage
-            ln -s -f ${{ matrix.server.path }}/storage ${{ matrix.server.path }}/html
 
             printf "%s" "$LARAVEL_ENV" > "${{ matrix.server.path }}/html/.env"
             cd ${{ matrix.server.path }}/html && php artisan migrate && php artisan storage:link && php artisan view:clear && php artisan cache:clear && php artisan config:clear
