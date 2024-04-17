@@ -123,7 +123,7 @@ class MullaAuthController extends Controller
         $fg = ForgotPasswordTokens::create([
             'token' =>  Str::upper($this->uuid_ag2()),
             'email' => $user->email,
-            'status' => 1
+            'phone' => $user->phone
         ]);
 
         Jobs::dispatch([
@@ -146,9 +146,9 @@ class MullaAuthController extends Controller
 
         $fg = ForgotPasswordTokens::where('token', $request->token)->first();
 
-        if (!$fg || $fg->status == 0) {
+        if (!$fg) {
             return response()->json([
-                'message' => 'Invalid token'
+                'message' => 'Token not found or expired, request a new one.'
             ], 401);
         }
 
