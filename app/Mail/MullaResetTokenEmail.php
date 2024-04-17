@@ -13,12 +13,14 @@ class MullaResetTokenEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $data;
+
     /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct($data)
     {
-        //
+        $this->data = $data;
     }
 
     /**
@@ -27,7 +29,7 @@ class MullaResetTokenEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Mulla Reset Token Email',
+            subject: 'Reset Token Email',
         );
     }
 
@@ -38,6 +40,9 @@ class MullaResetTokenEmail extends Mailable
     {
         return new Content(
             markdown: 'mail.mulla-reset-token-email',
+            with: [
+                'token' => $this->data['token'],
+            ],
         );
     }
 
@@ -48,6 +53,8 @@ class MullaResetTokenEmail extends Mailable
      */
     public function attachments(): array
     {
-        return [];
+        return [
+            
+        ];
     }
 }

@@ -27,7 +27,7 @@ class MullaPasswordResetEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Mulla Password Reset Email',
+            subject: 'Password Reset Email',
         );
     }
 

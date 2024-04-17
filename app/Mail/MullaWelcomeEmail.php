@@ -27,7 +27,7 @@ class MullaWelcomeEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Mulla Welcome Email',
+            subject: 'Welcome Email',
         );
     }
 
