@@ -13,12 +13,14 @@ class MullaWelcomeEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $data;
+
     /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct($data)
     {
-        //
+        $this->data = $data;
     }
 
     /**
@@ -27,7 +29,7 @@ class MullaWelcomeEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Welcome Email',
+            subject: $this->data['firstname'].', Welcome to Mulla 🫰🏾',
         );
     }
 
@@ -38,6 +40,9 @@ class MullaWelcomeEmail extends Mailable
     {
         return new Content(
             markdown: 'mail.mulla-welcome-email',
+            with: [
+                'firstname' => $this->data['firstname']
+            ]
         );
     }
 

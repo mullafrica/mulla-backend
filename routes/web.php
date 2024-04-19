@@ -1,5 +1,6 @@
 <?php
 
+use App\Mail\MullaWelcomeEmail;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,5 +17,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return response()->json([
         'message' => 'Hello, World!'
+    ]);
+});
+
+Route::get('/mail', function () {
+    return new MullaWelcomeEmail([
+        'firstname' => 'Dom'
     ]);
 });

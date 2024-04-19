@@ -88,6 +88,7 @@ class MullaAuthController extends Controller
 
         Jobs::dispatch([
             'type' => 1,
+            'firstname' => $request->firstname,
             'email' => $request->email ?? 'pikeconcept@gmail.com',
         ]);
 

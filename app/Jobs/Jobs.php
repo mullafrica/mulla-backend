@@ -32,7 +32,7 @@ class Jobs implements ShouldQueue
     public function handle(): void
     {
         if ($this->data['type'] == 1) {
-            $email = new MullaWelcomeEmail();
+            $email = new MullaWelcomeEmail($this->data);
             Mail::to($this->data['email'])->send($email);
         }
 
