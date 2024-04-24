@@ -21,6 +21,6 @@ class MullaUserTransactions extends Model
     }
 
     public function getAmtAttribute() {
-        return 'NGN ' . number_format($this->amount, 2);
+        return number_format($this->amount, 2) . ' NGN';
     }
 }

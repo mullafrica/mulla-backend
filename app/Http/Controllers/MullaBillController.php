@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\DiscordBots;
 use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserMeterNumbers;
 use App\Models\MullaUserTransactions;
@@ -303,7 +304,7 @@ class MullaBillController extends Controller
             MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
                 ->increment('balance', $request->amount * 0.005);
 
-            MullaUserTransactions::where('user_id', Auth::id())
+            $txn = MullaUserTransactions::where('user_id', Auth::id())
             ->where('payment_reference', $request->reference)
             ->update([
                 'bill_reference' => $res->content->transactions->transactionId,
@@ -314,6 +315,8 @@ class MullaBillController extends Controller
                 'bill_device_id' => $res->content->transactions->unique_element,
                 'type' => $res->content->transactions->type,
             ]);
+
+            // DiscordBots::dispatch(['message' => $txn]);
 
             return response()->json($pay->json(), 200);
         } else {

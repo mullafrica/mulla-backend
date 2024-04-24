@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\DiscordBots;
 use App\Jobs\Jobs;
 use App\Models\ForgotPasswordTokens;
 use App\Models\MullaUserCashbackWallets;
@@ -100,7 +101,7 @@ class MullaAuthController extends Controller
             'user_id' => $user->id,
         ]);
 
-        $this->sendToDiscord($user->firstname .', ' . $user->email . ' just created an account!');
+        DiscordBots::dispatch(['message' => $user->firstname . ', ' . $user->email . ' just created an account!']);
 
         return response()->json([
             'message' => 'User created successfully',
