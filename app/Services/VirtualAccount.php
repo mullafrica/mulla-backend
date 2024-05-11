@@ -52,7 +52,7 @@ class VirtualAccount implements IVirtualAccount
 
         if ($pt_account->successful()) {
             $this->sendToDiscord('DVA created for ' . $data['firstname'] . ' (ID:' . $data['user_id'] . ')');
-            return true;
+            return true; 
         } else {
             $this->sendToDiscord('An error occured while creating DVA for ' . $data['firstname'] . ' (ID:' . $data['user_id'] . ')');
             return false;
