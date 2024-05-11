@@ -71,25 +71,14 @@ class MullaAuthController extends Controller
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'email' => $request->email ? $request->email : null,
-        ]);
-
-        // Add contact to brevo, maybe dispatch to a job later
-        Http::withHeaders([
-            'accept' => 'application/json',
-            'api-key' => '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',
-            'content-type' => 'application/json'
-        ])->post('https://api.brevo.com/v3/contacts', [
-            "attributes" => [
-                "firstname" =>  $request->firstname,
-                "lastname" => $request->lastname,
-            ],
-            "email" => $request->email,
-            "updateEnabled" => false
-        ]);
+        ]);        
 
         Jobs::dispatch([
             'type' => 1,
+            'user_id' => $user->id,
             'firstname' => $request->firstname,
+            'lastname' => $request->lastname,
+            'phone' => $request->phone,
             'email' => $request->email ?? 'pikeconcept@gmail.com',
         ]);
 
@@ -101,7 +90,7 @@ class MullaAuthController extends Controller
             'user_id' => $user->id,
         ]);
 
-        DiscordBots::dispatch(['message' => $user->firstname . ', ' . $user->email . ' just created an account!']);
+        $this->sendToDiscord($user->firstname . ', ' . $user->email . ' just created an account!');
 
         return response()->json([
             'message' => 'User created successfully',

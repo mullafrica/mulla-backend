@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MullaAuthController;
 use App\Http\Controllers\MullaBillController;
+use App\Http\Controllers\WalletController;
 use App\Http\Controllers\Webhooks;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -52,4 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     );
 
     Route::post('/comet/meter/bill/pay', [MullaBillController::class, 'payVTPassBill']);
+
+    // Wallet
+    Route::get('/comet/wallet/dva', [WalletController::class, 'getVirtualAccount']);
 });

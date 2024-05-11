@@ -28,6 +28,5 @@ class DiscordBots implements ShouldQueue
     public function handle(): void
     {
         $this->sendToDiscord($this->data['message'] ?? 'Exception occured.');
-
     }
 }
