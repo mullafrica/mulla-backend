@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\Jobs;
+use App\Jobs\WebhookJobs;
 use Illuminate\Http\Request;
 
 class Webhooks extends Controller
@@ -23,10 +24,13 @@ class Webhooks extends Controller
         return response('OK', 200);
     }
 
-    public function cometWebhooks(Request $request) {
-        $data = $request->all();
+    public function all(Request $request) {
+        if ($request->ip() === '52.31.139.75' || $request->ip() === '52.49.173.169' || $request->ip() === '52.214.14.220') {
+            $data = $request->all();
+            WebhookJobs::dispatch($data);
+            return response('OK', 200);
+        }
 
-        Jobs::dispatch($request->all());
-        return response('OK', 200);
+        return;
     }
 }

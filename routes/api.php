@@ -28,6 +28,8 @@ Route::post('/comet/auth/register', [MullaAuthController::class, 'register']);
 Route::post('/comet/auth/token', [MullaAuthController::class, 'sendToken']);
 Route::post('/comet/auth/password/reset', [MullaAuthController::class, 'resetPassword']);
 Route::post('/comet/bloc/webhook', [Webhooks::class, 'blocWebhooks']);
+Route::post('/comet/webhook/all', [Webhooks::class, 'all']);
+
 
 
 Route::middleware('auth:sanctum')->group(function () {
