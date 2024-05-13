@@ -4,7 +4,7 @@ namespace App\Traits;
 
 trait UniqueId {
     protected function uuid() {
-        return substr(md5(time()), 0, 24);
+        return substr(md5(time()), 0, 64);
     }
 
     protected function uuid_ag()

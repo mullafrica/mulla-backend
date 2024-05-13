@@ -58,4 +58,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Wallet
     Route::get('/comet/wallet/dva', [WalletController::class, 'getVirtualAccount']);
+    Route::post('/comet/wallet/pay', [WalletController::class, 'payWithWallet']);
 });

@@ -2,16 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BaseUrls;
+use App\Enums\Cashbacks;
 use App\Jobs\DiscordBots;
 use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserMeterNumbers;
 use App\Models\MullaUserTransactions;
+use App\Services\WalletService;
+use App\Traits\Reusables;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 
 class MullaBillController extends Controller
 {
+    use Reusables;
+
     public $vtp_endpoint = "https://api-service.vtpass.com/api/";
 
     // A
@@ -70,7 +76,6 @@ class MullaBillController extends Controller
                     'meter_type' => $request->meter_type,
                     'address' => $device->data->address
                 ]);
-
                 return response()->json($validate->json(), 200);
             } else {
                 return response()->json($validate->json(), 400);
@@ -167,7 +172,7 @@ class MullaBillController extends Controller
             [
                 'user_id' => Auth::id(),
                 'payment_reference' => $request->reference,
-                'amount' => $request->amount, 
+                'amount' => $request->amount,
             ]
         );
 
@@ -264,14 +269,26 @@ class MullaBillController extends Controller
         }
     }
 
-    public function payVTPassBill(Request $request)
+    public function payVTPassBill(Request $request, WalletService $ws)
     {
         $request->validate([
             'bill' => 'required',
-            'email' => 'required',
             'operator_id' => 'required',
-            'amount' => 'required'
+            'amount' => 'required',
+            'fromWallet' => 'required'
         ]);
+
+        if ($request->amount < 500) {
+            return response(['message' => 'Minimum amount is 500'], 400);
+        }
+
+        if ($request->fromWallet == 'true') {
+            if (!$ws->checkBalance($request->amount * BaseUrls::MULTIPLIER)) {
+                return response(['message' => 'Low wallet balance'], 200);
+            } else {
+                $ws->decrementBalance($request->amount);
+            }
+        }
 
         if ($request->bill == 'electricity') {
             $request->validate([
@@ -289,39 +306,51 @@ class MullaBillController extends Controller
 
         $res = $pay->object();
 
+        DiscordBots::dispatch(['message' => json_encode($res)]);
+
         if (isset($res->Token)) {
-            /**
-             * TODO: Implement cashback functionality
-             * I am capping all cashback to 1.5% for now
-             * Credit wallet with 1.5% cashback
-             */
-
-             /**
-              * TODO: Create a cashback enum
-              */
-
             // Credit cashback wallet with 1.5% cashback, create a cashback enum
             MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
-                ->increment('balance', $request->amount * 0.005);
+                ->increment('balance', $request->amount * Cashbacks::ELECTRICITY_AEDC);
 
-            MullaUserTransactions::where('user_id', Auth::id())
-            ->where('payment_reference', $request->reference)
-            ->update([
-                'bill_reference' => $res->content->transactions->transactionId,
-                'cashback' => $request->amount * 0.005,
-                'vat' => $res->Tax ?? 0,
-                'bill_token' => $res->Token,
-                'bill_units' => $res->Units,
-                'bill_device_id' => $res->content->transactions->unique_element,
-                'type' => $res->content->transactions->type,
-            ]);
+            MullaUserTransactions::updateOrCreate(
+                [
+                    'user_id' => Auth::id(),
+                    'payment_reference' => $request->reference
+                ],
+                [
+                    'bill_reference' => $res->content->transactions->transactionId,
+                    'cashback' => $request->amount * Cashbacks::ELECTRICITY_AEDC,
+                    'amount' => $request->amount,
+                    'vat' => $res->Tax ?? 0,
+                    'bill_token' => $res->Token ?? '',
+                    'bill_units' => $res->Units ?? '',
+                    'bill_device_id' => $res->content->transactions->unique_element ?? '',
+                    'type' => $res->content->transactions->type ?? '',
+                ]
+            );
 
             return response()->json($pay->json(), 200);
-        } else {
-            return response()->json(['res' => $pay->json(), 'message' => 'Something went wrong, try again later.'], 400);
         }
 
-        return $pay->json();
+        if (isset($res->code) && $res->code === "000" && $res->content->transactions->status === "pending") {
+            MullaUserTransactions::updateOrCreate(
+                [
+                    'user_id' => Auth::id(),
+                    'payment_reference' => $request->reference
+                ],
+                [
+                    'bill_reference' => $res->content->transactions->transactionId,
+                    'amount' => $request->amount,
+                    'bill_device_id' => $res->content->transactions->unique_element,
+                    'type' => $res->content->transactions->type,
+                ]
+            );
+
+            return response()->json(['message' => 'Disco temporarily down.'], 400);
+        }
+
+        return response()->json(['message' => 'Something went wrong, try again later.'], 400);
     }
 
     private function generateRequestId(): string
