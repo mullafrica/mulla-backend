@@ -337,7 +337,7 @@ class MullaBillController extends Controller
 
         DiscordBots::dispatch(['message' => json_encode($res)]);
 
-        if (isset($res->Token)) {
+        if (isset($res->Token) && isset($res->Reference)) {
             // Credit cashback wallet with 1.5% cashback, create a cashback enum
             MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
                 ->increment('balance', $request->amount * Cashbacks::ELECTRICITY_AEDC);
@@ -352,7 +352,7 @@ class MullaBillController extends Controller
                     'cashback' => $request->amount * Cashbacks::ELECTRICITY_AEDC,
                     'amount' => $request->amount,
                     'vat' => $res->Tax ?? 0,
-                    'bill_token' => $res->Token ?? '',
+                    'bill_token' => $res->Reference ?? $res->Token,
                     'bill_units' => $res->Units ?? '',
                     'bill_device_id' => $res->content->transactions->unique_element ?? '',
                     'type' => $res->content->transactions->type ?? '',
