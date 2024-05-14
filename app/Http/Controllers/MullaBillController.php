@@ -197,11 +197,27 @@ class MullaBillController extends Controller
      */
     public function getVTPassOperatorProducts(Request $request)
     {
-        if ($request->has('bill') && $request->bill === 'electricity') {
+        if ($request->bill === 'electricity') {
+            $identifier = 'electricity-bill';
+        }
+
+        if ($request->bill === 'tv') {
+            $identifier = 'tv-subscription';
+        }
+
+        if ($request->bill === 'airtime') {
+            $identifier = 'airtime';
+        }
+
+        if ($request->bill === 'data') {
+            $identifier = 'data';
+        }
+
+        if ($identifier) {
             $ops = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
                 'public-key' => env('VTPASS_PUB_KEY')
-            ])->get($this->vtp_endpoint . 'services?identifier=electricity-bill');
+            ])->get($this->vtp_endpoint . 'services?identifier=' . $identifier);
 
             $data = $ops->json();
 
@@ -221,6 +237,19 @@ class MullaBillController extends Controller
             ];
         } else {
             return response()->json(['error' => 'Bill identifier not provided'], 400);
+        }
+    }
+
+    public function getVTPassOperatorProductVariation(Request $request)
+    {
+        if ($request->id) {
+            $ops = Http::withHeaders([
+                'api-key' => env('VTPASS_API_KEY'),
+                'public-key' => env('VTPASS_PUB_KEY')
+            ])->get($this->vtp_endpoint . 'service-variations?serviceID=' . $request->id);
+
+            return $ops->json();
+            // return $ops->object()->content->variations;
         }
     }
 

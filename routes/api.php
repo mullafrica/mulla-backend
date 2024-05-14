@@ -38,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/comet/users/{id}', [MullaAuthController::class, 'getUser']);
 
     Route::get('/comet/supported/ops', [MullaBillController::class, 'getVTPassOperatorProducts']);
+    Route::get('/comet/supported/ops/variation', [MullaBillController::class, 'getVTPassOperatorProductVariation']);
 
     Route::get('/comet/meter/validate/{op_id}', [MullaBillController::class, 'validateVTPassMeter']);
 

@@ -82,14 +82,6 @@ class MullaAuthController extends Controller
             'email' => $request->email ?? 'pikeconcept@gmail.com',
         ]);
 
-        MullaUserWallets::create([
-            'user_id' => $user->id,
-        ]);
-
-        MullaUserCashbackWallets::create([
-            'user_id' => $user->id,
-        ]);
-
         $this->sendToDiscord($user->firstname . ', ' . $user->email . ' just created an account!');
 
         return response()->json([
