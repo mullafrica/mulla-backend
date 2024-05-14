@@ -249,7 +249,6 @@ class MullaBillController extends Controller
             ])->get($this->vtp_endpoint . 'service-variations?serviceID=' . $request->id);
 
             return $ops->json();
-            // return $ops->object()->content->variations;
         }
     }
 
@@ -337,7 +336,10 @@ class MullaBillController extends Controller
 
         DiscordBots::dispatch(['message' => json_encode($res)]);
 
-        if (isset($res->Token) && isset($res->Reference)) {
+        // TODO: Check each disco and see if we can handle the data 
+        // separately
+
+        if (isset($res->Token) || isset($res->token)) {
             // Credit cashback wallet with 1.5% cashback, create a cashback enum
             MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
                 ->increment('balance', $request->amount * Cashbacks::ELECTRICITY_AEDC);
@@ -352,8 +354,8 @@ class MullaBillController extends Controller
                     'cashback' => $request->amount * Cashbacks::ELECTRICITY_AEDC,
                     'amount' => $request->amount,
                     'vat' => $res->Tax ?? 0,
-                    'bill_token' => $res->Reference ?? $res->Token,
-                    'bill_units' => $res->Units ?? '',
+                    'bill_token' => $res->Reference ?? $res->token ?? $res->Token,
+                    'bill_units' => $res->Units ?? $res->units,
                     'bill_device_id' => $res->content->transactions->unique_element ?? '',
                     'type' => $res->content->transactions->type ?? '',
                 ]
@@ -379,7 +381,7 @@ class MullaBillController extends Controller
             return response()->json(['message' => 'Disco temporarily down.'], 400);
         }
 
-        return response()->json(['message' => 'Something went wrong, try again later.'], 400);
+        return response()->json(['message' => 'An error occured, please contact support.'], 400);
     }
 
     private function generateRequestId(): string
