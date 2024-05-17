@@ -178,7 +178,7 @@ class MullaAuthController extends Controller
     public function getUserWallets()
     {
         return response()->json([
-            'wallet' => number_format(MullaUserWallets::where('user_id', Auth::id())->sum('balance') + MullaUserCashbackWallets::where('user_id', Auth::id())->sum('balance'), 2),
+            'wallet' => number_format(MullaUserWallets::where('user_id', Auth::id())->sum('balance'), 2),
             'cashback_wallet' => number_format(MullaUserCashbackWallets::where('user_id', Auth::id())->sum('balance'), 2)
         ], 200);
     }

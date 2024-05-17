@@ -41,8 +41,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/comet/supported/ops/variation', [MullaBillController::class, 'getVTPassOperatorProductVariation']);
 
     Route::get('/comet/meter/validate/{op_id}', [MullaBillController::class, 'validateVTPassMeter']);
+    Route::get('/comet/tv/validate/{op_id}', [MullaBillController::class, 'validateSmartCardNumber']);
 
     Route::get('/comet/user/meters',  [MullaBillController::class, 'getUserMeters']);
+    Route::get('/comet/user/tv/card/numbers',  [MullaBillController::class, 'getUserTvCardNumbers']);
 
     Route::get('/comet/user/wallets',  [MullaAuthController::class, 'getUserWallets']);
 
@@ -55,7 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
         [MullaBillController::class, 'getOperatorProducts']
     );
 
-    Route::post('/comet/meter/bill/pay', [MullaBillController::class, 'payVTPassBill']);
+    Route::post('/comet/bill/pay', [MullaBillController::class, 'payVTPassBill']);
 
     // Wallet
     Route::get('/comet/wallet/dva', [WalletController::class, 'getVirtualAccount']);
