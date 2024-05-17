@@ -8,10 +8,13 @@ use App\Jobs\DiscordBots;
 use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserMeterNumbers;
 use App\Models\MullaUserTransactions;
+use App\Models\MullaUserTvCardNumbers;
+use App\Models\MullaUserWallets;
 use App\Services\WalletService;
 use App\Traits\Reusables;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class MullaBillController extends Controller
@@ -88,6 +91,12 @@ class MullaBillController extends Controller
     public function getUserMeters()
     {
         $meters = MullaUserMeterNumbers::where('user_id', Auth::id())->get();
+        return response()->json($meters, 200);
+    }
+
+    public function getUserTvCardNumbers()
+    {
+        $meters = MullaUserTvCardNumbers::where('user_id', Auth::id())->get();
         return response()->json($meters, 200);
     }
 
@@ -214,27 +223,26 @@ class MullaBillController extends Controller
         }
 
         if ($identifier) {
-            $ops = Http::withHeaders([
-                'api-key' => env('VTPASS_API_KEY'),
-                'public-key' => env('VTPASS_PUB_KEY')
-            ])->get($this->vtp_endpoint . 'services?identifier=' . $identifier);
+            $response = Cache::remember('operator_products_' . $identifier, 60 * 60 * 24, function () use ($identifier) {
+                $ops = Http::withHeaders([
+                    'api-key' => env('VTPASS_API_KEY'),
+                    'public-key' => env('VTPASS_PUB_KEY')
+                ])->get($this->vtp_endpoint . 'services?identifier=' . $identifier);
 
-            $data = $ops->json();
+                $data = $ops->json();
 
-            $mappedContent = array_map(function ($service) {
-                $service['id'] = $service['serviceID']; // Create a new 'id' property
-                unset($service['serviceID']); // Remove the original 'serviceID' property
-                return $service;
-            }, $data['content']);
+                $mappedContent = array_map(function ($service) {
+                    $service['id'] = $service['serviceID']; // Create a new 'id' property
+                    unset($service['serviceID']); // Remove the original 'serviceID' property
+                    return $service;
+                }, $data['content']);
 
-            $response['data'] = $mappedContent;
+                $response['data'] = $mappedContent;
+
+                return $response;
+            });
 
             return $response;
-
-            return [
-
-                'data' => $data['data']
-            ];
         } else {
             return response()->json(['error' => 'Bill identifier not provided'], 400);
         }
@@ -243,12 +251,16 @@ class MullaBillController extends Controller
     public function getVTPassOperatorProductVariation(Request $request)
     {
         if ($request->id) {
-            $ops = Http::withHeaders([
-                'api-key' => env('VTPASS_API_KEY'),
-                'public-key' => env('VTPASS_PUB_KEY')
-            ])->get($this->vtp_endpoint . 'service-variations?serviceID=' . $request->id);
+            $ops = Cache::remember('operator_variation_' . $request->id, 60 * 60 * 24, function () use ($request) {
+                $ops = Http::withHeaders([
+                    'api-key' => env('VTPASS_API_KEY'),
+                    'public-key' => env('VTPASS_PUB_KEY')
+                ])->get($this->vtp_endpoint . 'service-variations?serviceID=' . $request->id);
 
-            return $ops->json();
+                return $ops->object()->content->variations;
+            });
+
+            return $ops;
         }
     }
 
@@ -297,19 +309,83 @@ class MullaBillController extends Controller
         }
     }
 
-    public function payVTPassBill(Request $request, WalletService $ws)
+    public function validateSmartCardNumber(Request $request, $op_id)
     {
         $request->validate([
-            'bill' => 'required',
-            'operator_id' => 'required',
+            'service_id' => 'required',
+            'device_number' => 'required'
+        ]);
+
+        $validate = Http::withHeaders([
+            'api-key' => env('VTPASS_API_KEY'),
+            'secret-key' => env('VTPASS_SEC_KEY')
+        ])->withOptions([
+            'timeout' => 120,
+        ])->post($this->vtp_endpoint . 'merchant-verify?billersCode=' . $request->device_number . '&serviceID=' . $request->service_id);
+
+        $data = $validate->object();
+
+        if (!isset($data->content->error)) {
+            $device = $validate->object();
+
+            MullaUserTvCardNumbers::updateOrCreate([
+                'card_number' => $request->device_number,
+                'user_id' => Auth::id(),
+            ], [
+                'name' => $device->content->Customer_Name,
+                'type' => $device->content->Customer_Type,
+            ]);
+
+            return response()->json([
+                "name" => $device->content->Customer_Name,
+                "card_number" =>
+                $request->device_number,
+            ], 200);
+        } else {
+            return response()->json(['error' => $data->content->error ?? 'An error occured.'], 400);
+        }
+    }
+
+    public function payVTPassBill(Request $request, WalletService $ws)
+    {
+        /** Validate data */
+        $request_id = $this->generateRequestId();
+
+        $request->validate([
+            'payment_reference' => 'required',
+            'serviceID' => 'required',
+            'billersCode' => 'required',
             'amount' => 'required',
             'fromWallet' => 'required'
         ]);
 
-        if ($request->amount < 500) {
-            return response(['message' => 'Minimum amount is 500'], 400);
+        if ($request->serviceID !== 'airtime') {
+            $request->validate([
+                'variation_code' => 'required'
+            ]);
         }
 
+        if ($request->serviceID === 'airtime') {
+            if ($request->amount < 500) {
+                return response(['message' => 'Minimum amount is 500'], 400);
+            }
+
+            $request->validate([
+                'recipient' => 'required',
+            ]);
+        }
+
+        if ($request->serviceID === 'showmax') {
+            MullaUserMeterNumbers::updateOrCreate([
+                'meter_number' => $request->billersCode,
+            ], [
+                'user_id' => Auth::id(),
+            ]);
+        }
+
+        $phone = Auth::user()->phone;
+
+        /** Check wallet if true */
         if ($request->fromWallet == 'true') {
             if (!$ws->checkBalance($request->amount * BaseUrls::MULTIPLIER)) {
                 return response(['message' => 'Low wallet balance'], 200);
@@ -318,57 +394,56 @@ class MullaBillController extends Controller
             }
         }
 
-        if ($request->bill == 'electricity') {
-            $request->validate([
-                'meter_type' => 'required',
-                'device_number' => 'required',
-            ]);
+        /** Make api calls */
+        if ($request->serviceID === 'airtime') {
+            $pay = Http::withHeaders([
+                'api-key' => env('VTPASS_API_KEY'),
+                'secret-key' => env('VTPASS_SEC_KEY')
+            ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&amount=' . $request->amount . '&phone=' . $request->recipient);
+        } else {
+            $pay = Http::withHeaders([
+                'api-key' => env('VTPASS_API_KEY'),
+                'secret-key' => env('VTPASS_SEC_KEY')
+            ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $phone);
         }
-
-        $user =  Auth::user();
-        // Pass the bill to this endpoint and return the response
-        $pay = Http::withHeaders([
-            'api-key' => env('VTPASS_API_KEY'),
-            'secret-key' => env('VTPASS_SEC_KEY')
-        ])->post($this->vtp_endpoint . 'pay?request_id=' . $this->generateRequestId() . '&serviceID=' . $request->operator_id . '&billersCode=' . $request->device_number . '&variation_code=' . $request->meter_type . '&amount=' . $request->amount . '&phone=' . $user->phone);
 
         $res = $pay->object();
 
+        /** Log http response */
         DiscordBots::dispatch(['message' => json_encode($res)]);
 
-        // TODO: Check each disco and see if we can handle the data 
-        // separately
-
-        if (isset($res->Token) || isset($res->token)) {
-            // Credit cashback wallet with 1.5% cashback, create a cashback enum
+        if (isset($res->response_description) && $res->response_description === 'TRANSACTION SUCCESSFUL') {
             MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
+                ->increment('balance', $request->amount * Cashbacks::ELECTRICITY_AEDC);
+
+            MullaUserWallets::updateOrCreate(['user_id' => Auth::id()])
                 ->increment('balance', $request->amount * Cashbacks::ELECTRICITY_AEDC);
 
             MullaUserTransactions::updateOrCreate(
                 [
                     'user_id' => Auth::id(),
-                    'payment_reference' => $request->reference
+                    'payment_reference' => $request->payment_reference
                 ],
                 [
                     'bill_reference' => $res->content->transactions->transactionId,
                     'cashback' => $request->amount * Cashbacks::ELECTRICITY_AEDC,
                     'amount' => $request->amount,
                     'vat' => $res->Tax ?? 0,
-                    'bill_token' => $res->Reference ?? $res->token ?? $res->Token,
-                    'bill_units' => $res->Units ?? $res->units,
+                    'bill_token' => $res->Reference ?? $res->token ?? $res->Token ?? '',
+                    'bill_units' => $res->Units ?? $res->units ?? '',
                     'bill_device_id' => $res->content->transactions->unique_element ?? '',
                     'type' => $res->content->transactions->type ?? '',
+                    'voucher_code' => $res->purchased_code ?? $res->Voucher[0] ?? '',
                 ]
             );
 
             return response()->json($pay->json(), 200);
-        }
-
-        if (isset($res->code) && $res->code === "000" && $res->content->transactions->status === "pending") {
+        } else {
+            /** If error, update or create transaction */
             MullaUserTransactions::updateOrCreate(
                 [
                     'user_id' => Auth::id(),
-                    'payment_reference' => $request->reference
+                    'payment_reference' => $request->payment_reference
                 ],
                 [
                     'bill_reference' => $res->content->transactions->transactionId,
@@ -378,7 +453,7 @@ class MullaBillController extends Controller
                 ]
             );
 
-            return response()->json(['message' => 'Disco temporarily down.'], 400);
+            return response()->json(['message' => 'Service not available at the moment.'], 400);
         }
 
         return response()->json(['message' => 'An error occured, please contact support.'], 400);
