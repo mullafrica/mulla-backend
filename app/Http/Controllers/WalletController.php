@@ -54,7 +54,7 @@ class WalletController extends Controller
         if ($ws->checkBalance($request->amount * BaseUrls::MULTIPLIER)) {
             return response(['reference' => $this->uuid()], 200);
         } else {
-            return response(['message' => 'Your balance is insufficient, please fund your wallet', 'status' => false], 200);
+            return response(['message' => 'Your balance is insufficient, please fund your wallet.', 'status' => false], 200);
         }
     }
 }
