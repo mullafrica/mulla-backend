@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\BaseUrls;
 use App\Enums\Cashbacks;
 use App\Jobs\DiscordBots;
+use App\Models\MullaUserAirtimeNumbers;
 use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserMeterNumbers;
 use App\Models\MullaUserTransactions;
@@ -90,14 +91,19 @@ class MullaBillController extends Controller
 
     public function getUserMeters()
     {
-        $meters = MullaUserMeterNumbers::where('user_id', Auth::id())->get();
-        return response()->json($meters, 200);
+        $value = MullaUserMeterNumbers::where('user_id', Auth::id())->get();
+        return response()->json($value, 200);
     }
 
     public function getUserTvCardNumbers()
     {
-        $meters = MullaUserTvCardNumbers::where('user_id', Auth::id())->get();
-        return response()->json($meters, 200);
+        $value = MullaUserTvCardNumbers::where('user_id', Auth::id())->get();
+        return response()->json($value, 200);
+    }
+
+    public function getUserAirtimeNumbers() {
+        $value = MullaUserAirtimeNumbers::where('user_id', Auth::id())->get();
+        return response()->json($value, 200);
     }
 
     public function payABill(Request $request)
@@ -182,6 +188,7 @@ class MullaBillController extends Controller
                 'user_id' => Auth::id(),
                 'payment_reference' => $request->reference,
                 'amount' => $request->amount,
+                'status' => false
             ]
         );
 
@@ -359,19 +366,36 @@ class MullaBillController extends Controller
             'fromWallet' => 'required'
         ]);
 
-        if ($request->serviceID !== 'airtime') {
+        if (!MullaUserTransactions::where('payment_reference', $request->payment_reference)->where('status', false)->exists()) {
+            return response(['message' => 'Payment ref error.'], 400);
+        }
+
+        if (!$this->isAirtime($request->serviceID)) {
             $request->validate([
                 'variation_code' => 'required'
             ]);
         }
 
-        if ($request->serviceID === 'airtime') {
+        if ($request->serviceID === 'electricity') {
             if ($request->amount < 500) {
-                return response(['message' => 'Minimum amount is 500'], 400);
+                return response(['message' => 'Minimum amount is 500.'], 400);
+            }
+        }
+        
+        if ($this->isAirtime($request->serviceID)) {
+            $request->validate([
+                'recipient' => 'required|digits:11',
+            ]);
+
+            if ($request->amount < 50) {
+                return response(['message' => 'Minimum amount is 50.'], 400);
             }
 
-            $request->validate([
-                'recipient' => 'required',
+            MullaUserAirtimeNumbers::updateOrCreate([
+                'phone_number' => $request->recipient,
+                'user_id' => Auth::id(),
+            ], [
+                'telco' => $request->serviceID,
             ]);
         }
 
@@ -388,7 +412,7 @@ class MullaBillController extends Controller
         /** Check wallet if true */
         if ($request->fromWallet == 'true') {
             if (!$ws->checkBalance($request->amount * BaseUrls::MULTIPLIER)) {
-                return response(['message' => 'Low wallet balance'], 200);
+                return response(['message' => 'Low wallet balance.'], 200);
             } else {
                 $ws->decrementBalance($request->amount);
             }
@@ -434,12 +458,15 @@ class MullaBillController extends Controller
                     'bill_device_id' => $res->content->transactions->unique_element ?? '',
                     'type' => $res->content->transactions->type ?? '',
                     'voucher_code' => $res->purchased_code ?? $res->Voucher[0] ?? '',
+                    'status' => true,
                 ]
             );
 
-            return response()->json($pay->json(), 200);
+            return response()->json(['message' => 'Payment successful.'], 200);
         } else {
             /** If error, update or create transaction */
+            if ($this->isAirtime($request->serviceID)) return;
+
             MullaUserTransactions::updateOrCreate(
                 [
                     'user_id' => Auth::id(),
@@ -450,6 +477,7 @@ class MullaBillController extends Controller
                     'amount' => $request->amount,
                     'bill_device_id' => $res->content->transactions->unique_element,
                     'type' => $res->content->transactions->type,
+                    'status' => true,
                 ]
             );
 
@@ -468,5 +496,12 @@ class MullaBillController extends Controller
         }
         $randomString = substr(str_shuffle(str_repeat(strtoupper(implode('', range('a', 'z')) . implode('', range(0, 9))), 16)), 0, strlen($baseId) - 12);
         return $baseId . $randomString . uniqid();
+    }
+
+    private function isAirtime($value) {
+        if ($value === 'glo' || $value === 'mtn' || $value === 'airtel' || $value === 'foreign-airtime' || $value === 'etisalat') {
+            return true;
+        }
+        return false;
     }
 }

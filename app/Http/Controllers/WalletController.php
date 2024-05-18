@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\BaseUrls;
 use App\Models\CustomerVirtualAccountsModel;
+use App\Models\MullaUserTransactions;
 use App\Models\MullaUserWallets;
 use App\Models\User;
 use App\Services\VirtualAccount;
@@ -52,7 +53,17 @@ class WalletController extends Controller
         ]);
 
         if ($ws->checkBalance($request->amount * BaseUrls::MULTIPLIER)) {
-            return response(['reference' => $this->uuid()], 200);
+
+            $m = MullaUserTransactions::create(
+                [
+                    'user_id' => Auth::id(),
+                    'payment_reference' => $this->uuid(),
+                    'amount' => $request->amount,
+                    'status' => false
+                ]
+            );
+
+            return response(['reference' => $m->payment_reference], 200);
         } else {
             return response(['message' => 'Your balance is insufficient, please fund your wallet.', 'status' => false], 200);
         }
