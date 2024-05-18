@@ -419,7 +419,7 @@ class MullaBillController extends Controller
         }
 
         /** Make api calls */
-        if ($request->serviceID === 'airtime') {
+        if ($this->isAirtime($request->serviceID)) {
             $pay = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
                 'secret-key' => env('VTPASS_SEC_KEY')
