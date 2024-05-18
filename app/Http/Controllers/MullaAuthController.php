@@ -32,18 +32,18 @@ class MullaAuthController extends Controller
         if ($user) {
             if (Hash::check($request->password, $user->password)) {
                 return response()->json([
-                    'message' => 'User logged in successfully',
+                    'message' => 'Logged in.',
                     'user' => $user,
                     'token' => $user->createToken($request->phone)->plainTextToken
                 ], 200);
             } else {
                 return response()->json([
-                    'message' => 'Incorrect password, try again'
+                    'message' => 'Incorrect password, try again.'
                 ], 401);
             }
         } else {
             return response()->json([
-                'message' => 'Account not found, please sign up first'
+                'message' => 'Account not found, please sign up first.'
             ], 404);
         }
     }
@@ -61,7 +61,7 @@ class MullaAuthController extends Controller
         // Check if user already exists
         if (User::where('phone', $request->phone)->exists()) {
             return response()->json([
-                'message' => 'Account with this phone number already exists, please sign in'
+                'message' => 'Account with this phone number already exists, please sign in.'
             ]);
         }
 
@@ -85,7 +85,7 @@ class MullaAuthController extends Controller
         $this->sendToDiscord($user->firstname . ', ' . $user->email . ' just created an account!');
 
         return response()->json([
-            'message' => 'User created successfully',
+            'message' => 'User created successfully.',
             'user' => $user,
             'token' => $user->createToken($request->phone)->plainTextToken
         ], 200);
@@ -164,7 +164,7 @@ class MullaAuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'User logged out successfully'
+            'message' => 'User logged out successfully.'
         ], 200);
     }
 
