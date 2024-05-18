@@ -197,7 +197,7 @@ class MullaBillController extends Controller
 
     public function getUserTxns()
     {
-        return response()->json(MullaUserTransactions::where('user_id', Auth::id())->orderBy('created_at', 'desc')->get(), 200);
+        return response()->json(MullaUserTransactions::where('user_id', Auth::id())->where('status', true)->orderBy('created_at', 'desc')->get(), 200);
     }
 
     /** 
