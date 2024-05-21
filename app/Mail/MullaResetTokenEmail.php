@@ -29,7 +29,7 @@ class MullaResetTokenEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Reset Token Email',
+            subject: $this->data['firstname'] . ", Here's your Password Reset PIN " . $this->data['token'],
         );
     }
 
@@ -42,6 +42,7 @@ class MullaResetTokenEmail extends Mailable
             markdown: 'mail.mulla-reset-token-email',
             with: [
                 'token' => $this->data['token'],
+                'firstname' => $this->data['firstname'],
             ],
         );
     }
@@ -53,8 +54,6 @@ class MullaResetTokenEmail extends Mailable
      */
     public function attachments(): array
     {
-        return [
-            
-        ];
+        return [];
     }
 }

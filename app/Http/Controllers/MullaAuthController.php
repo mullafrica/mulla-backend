@@ -112,6 +112,7 @@ class MullaAuthController extends Controller
         Jobs::dispatch([
             'type' => 2,
             'token' => $fg->token,
+            'firstname' => $user->firstname,
             'email' => $user->email,
         ]);
 
