@@ -22,6 +22,8 @@ class MullaAuthController extends Controller
 
     public function login(Request $request)
     {
+        return $this->getUserDetails();
+
         $request->validate([
             'phone' => 'required|numeric|digits:11',
             'password' => 'required',
