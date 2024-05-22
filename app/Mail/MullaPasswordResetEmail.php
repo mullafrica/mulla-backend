@@ -31,7 +31,7 @@ class MullaPasswordResetEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Password Reset Email',
+            subject: $this->data['firstname'] . ', you successfully updated your password.',
         );
     }
 
