@@ -3,8 +3,8 @@
 namespace App\Traits;
 
 use GuzzleHttp\Client;
-use Jenssegers\Agent\Agent;
 use Stevebauman\Location\Facades\Location;
+use hisorange\BrowserDetect\Facade as Browser;
 
 trait Reusables
 {
@@ -27,29 +27,47 @@ trait Reusables
 
     public function getUserDetails()
     {
-        $agent = new Agent();
+        if (env('APP_ENV') !== 'production') {
+            return [
+                // 'ip_address' => request()->ip(),
+                'browser' => 'Safari',
+                // 'browser_version' => '14.0',
+                'platform' => 'macOS',
+                // 'platform_version' => '11.0',
+                'location' => [
+                    'country' => 'Nigeria',
+                    // 'region' => 'Lagos',
+                    'city' => 'Ike',
+                    // 'zip_code' => '100100',
+                    // 'latitude' => '6',
+                    // 'longitude' => '7',
+                    // 'timezone' => 'Africa/Lagos',
+                ],
+            ];
+        }
+
         $ip = request()->ip();
         $location = Location::get($ip);
 
-        $browser = $agent->browser();
-        $browserVersion = $agent->version($browser);
-        $platform = $agent->platform();
-        $platformVersion = $agent->version($platform);
+        $browser = Browser::browserFamily();
+        // $browserVersion = Browser::browserVersion();
+        $platform = Browser::platformName();
+        // $platformVersion = Browser::platformVersion();
 
         return [
-            'ip_address' => $ip,
+            // 'ip_address' => $ip,
             'browser' => $browser,
-            'browser_version' => $browserVersion,
+            // 'browser_version' => $browserVersion,
             'platform' => $platform,
-            'platform_version' => $platformVersion,
+            // 'platform_version' => $platformVersion,
             'location' => $location ? [
                 'country' => $location->countryName,
-                'region' => $location->regionName,
+                // 'region' => $location->regionName,
                 'city' => $location->cityName,
-                'zip_code' => $location->zipCode,
-                'latitude' => $location->latitude,
-                'longitude' => $location->longitude,
-                'timezone' => $location->timezone,
+                // 'zip_code' => $location->zipCode,
+                // 'latitude' => $location->latitude,
+                // 'longitude' => $location->longitude,
+                // 'timezone' => $location->timezone,
             ] : null,
         ];
     }

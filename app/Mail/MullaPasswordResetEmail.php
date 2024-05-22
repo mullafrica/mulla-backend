@@ -2,6 +2,8 @@
 
 namespace App\Mail;
 
+use App\Traits\Reusables;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -11,14 +13,16 @@ use Illuminate\Queue\SerializesModels;
 
 class MullaPasswordResetEmail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, Reusables;
+
+    public $data;
 
     /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct($data)
     {
-        //
+        $this->data = $data;
     }
 
     /**
@@ -36,8 +40,17 @@ class MullaPasswordResetEmail extends Mailable
      */
     public function content(): Content
     {
+        $info = $this->getUserDetails();
+
         return new Content(
             markdown: 'mail.mulla-password-reset-email',
+            with: [
+                'firstname' => $this->data['firstname'],
+                'datetime' => Carbon::parse(now())->isoFormat('lll'),
+                'browser' => $info['browser'],
+                'os' => $info['platform'],
+                'location' => $info['location']['city'] . ', ' . $info['location']['country'],
+            ],
         );
     }
 

@@ -10,6 +10,7 @@ use App\Models\MullaUserWallets;
 use App\Models\User;
 use App\Traits\Reusables;
 use App\Traits\UniqueId;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
@@ -22,8 +23,6 @@ class MullaAuthController extends Controller
 
     public function login(Request $request)
     {
-        return $this->getUserDetails();
-
         $request->validate([
             'phone' => 'required|numeric|digits:11',
             'password' => 'required',
@@ -108,7 +107,7 @@ class MullaAuthController extends Controller
         $fg = ForgotPasswordTokens::create([
             'token' =>  Str::upper($this->uuid_ag2()),
             'email' => $user->email,
-            'phone' => $user->phone
+            'phone' => $user->phone,
         ]);
 
         Jobs::dispatch([
@@ -154,7 +153,7 @@ class MullaAuthController extends Controller
 
         Jobs::dispatch([
             'type' => 3,
-            'email' => $user->email
+            'email' => $user->email,
         ]);
 
         return response()->json([
