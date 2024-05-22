@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {{-- <title>Email</title> --}}
+    <title>Email</title>
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,301,400,401,500,501,700,701,900,901,1,2&display=swap"
         rel="stylesheet">
     <style>
@@ -127,6 +127,7 @@
             </div>
 
             <div style="font-family: 'Satoshi', sans-serif;">Thank you for helping us keep your account secure.
+                <br />
                 Your Friends at Mulla.
             </div>
 

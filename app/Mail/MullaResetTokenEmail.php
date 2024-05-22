@@ -43,6 +43,7 @@ class MullaResetTokenEmail extends Mailable
             with: [
                 'token' => $this->data['token'],
                 'firstname' => $this->data['firstname'],
+                
             ],
         );
     }
