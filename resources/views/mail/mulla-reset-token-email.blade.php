@@ -42,8 +42,9 @@
 </head>
 
 <body style="background-color: #eeeeee;">
+    <br /> <br />
     <div
-        style="margin:2.5rem; font-family: Arial, sans-serif;">
+        style="font-family: Arial, sans-serif;">
         <div class="container">
             <header>
                 <div>
@@ -84,6 +85,7 @@
             </div>
         </div>
     </div>
+     <br /> <br />
 </body>
 
 </html>
