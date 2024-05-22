@@ -40,7 +40,7 @@ class MullaUserLoginEmail extends Mailable
      */
     public function content(): Content
     {
-        $info = $this->getUserDetails($this->data['ip']);
+        $info = $this->getUserDetails($this->data['ip'], $this->data['user_agent']);
 
         return new Content(
             markdown: 'mail.mulla-user-login-email',

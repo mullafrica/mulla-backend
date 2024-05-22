@@ -1,7 +1,10 @@
 <?php
 
+use App\Mail\MullaPasswordResetEmail;
+use App\Mail\MullaResetTokenEmail;
 use App\Mail\MullaWelcomeEmail;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Carbon;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,7 +24,9 @@ Route::get('/', function () {
 });
 
 Route::get('/mail', function () {
-    return new MullaWelcomeEmail([
-        'firstname' => 'Dom'
+    return new MullaResetTokenEmail([
+        'firstname' => 'Dom',
+        'token' => '123456',
+        'date' => Carbon::parse(now())->isoFormat('lll')
     ]);
 });

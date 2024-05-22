@@ -38,6 +38,7 @@ class MullaAuthController extends Controller
                     'email' => $user->email,
                     'firstname' => $user->firstname,
                     'ip' => request()->ip(),
+                    'user_agent' =>$request->header('User-Agent')
                 ]);
 
                 return response()->json([
@@ -164,6 +165,7 @@ class MullaAuthController extends Controller
             'email' => $user->email,
             'firstname' => $user->firstname,
             'ip' => request()->ip(),
+            'user_agent' => $request->header('User-Agent')
         ]);
 
         return response()->json([
