@@ -106,7 +106,8 @@
     </style>
 </head>
 
-<body style="margin-top:40px; margin-bottom:40px; padding: 0; background-color: #eeeeee; font-family: Arial, sans-serif;">
+<body
+    style="margin-top:40px; margin-bottom:40px; padding: 0; background-color: #eeeeee; font-family: Arial, sans-serif;">
     <div class="container" style="display: grid; grid-gap: 4rem;">
         <header>
             <div>
@@ -123,20 +124,29 @@
             <p style="font-size: 10px;">This expires in 5mins</p>
         </main> --}}
 
-         <div style="display: grid; grid-gap: 2rem; justify-self: center; align-self: start; background-color: #fff; width: 100%; max-width: 700px; box-sizing: border-box; border-radius: 0.75rem;">
+        <div
+            style="display: grid; grid-gap: 2rem; justify-self: center; align-self: start; background-color: #fff; box-sizing: border-box; border-radius: 0.75rem;">
             <div>{{ $firstname ?? '' }},</div>
             <div>Enter this 6-digit code to verify it's really you on the other end of this.</div>
             <div style="font-size: 30px;">{{ $token ?? '' }}</div>
             <div>This code expires in 5 minutes.</div>
-            <div>If you did not request this password reset code, we recommend that you change your Mulla password immediately by using this <a href="https://mulla.africa" style="color: inherit; text-decoration: underline;">link</a>.</div>
-            <div>For your account safety, please do not forward this email or provide the details of this email to anyone.</div>
+            <div>If you did not request this password reset code, we recommend that you change your Mulla password
+                immediately by using this <a href="https://mulla.africa"
+                    style="color: inherit; text-decoration: underline;">link</a>.</div>
+            <div>For your account safety, please do not forward this email or provide the details of this email to
+                anyone.</div>
             <div>Thank you for helping us keep your account secure.<br />Your Friends at Mulla.</div>
-            <div>Something not looking right? Please reply to this email or contact us at <a href="mailto:support@mulla.africa" style="color: inherit; text-decoration: underline;">support@mulla.africa</a> right away.</div>
+            <div>Something not looking right? Please reply to this email or contact us at <a
+                    href="mailto:support@mulla.africa"
+                    style="color: inherit; text-decoration: underline;">support@mulla.africa</a> right away.</div>
+
+            <div style="font-size: 12px; display: grid; grid-gap: 20%; margin-top:35px;">
+                <div>&copy; 2024. Mulla Africa.</div>
+                <div>The everyday bill payments app for Africans.</div>
+            </div>
         </div>
 
-        <div style="display: grid; font-size:12px; font-weight: normal; justify-self: center; align-self: start; width: 100%; max-width: 700px; box-sizing: border-box;">
-            &copy; 2024. Mulla Africa. <br /> <br /> The everyday bill payments app for Africans.
-        </div>
+
     </div>
 </body>
 
