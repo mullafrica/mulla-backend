@@ -6,14 +6,14 @@
 </head>
 <body style="background-color: #eeeeee; margin: 0; padding: 0;">
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; padding: 0; background-color: #eeeeee;">
-        <div style="padding: 2.5rem; max-width: 600px; margin: 40px auto; background-color: #ffffff; box-sizing: border-box; border-radius: 0.75rem;">
+        <div style="padding: 2.5rem; max-width: 600px; margin: 40px auto; background-color: #ffffff; box-sizing: border-box; border-radius: 0 0 0.75rem 0.75rem;">
             <header>
                 <div>
                     <img src="https://awstestbucket-pk.s3.eu-west-1.amazonaws.com/logo-black.png" alt="Mulla Africa Logo" style="width: 130px;" />
                 </div>
             </header>
 
-            <div style="margin-top: 50px; background-color: #fff; box-sizing: border-box; border-radius: 0.75rem;">
+            <div style="margin-top: 50px; background-color: #fff; box-sizing: border-box; border-radius: 0 0 0.75rem 0.75rem;">
                 <div style="padding-bottom: 2rem; font-size: 15px;">{{ $firstname ?? '' }},</div>
                 <div style="padding-bottom: 2rem; font-size: 15px;">Enter this 6-digit code to verify it's really you on the other end of this.</div>
                 <div style="font-size: 30px; padding-bottom: 2rem;">{{ $token ?? '' }}</div>
