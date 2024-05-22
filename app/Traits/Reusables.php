@@ -25,7 +25,7 @@ trait Reusables
         ]);
     }
 
-    public function getUserDetails()
+    public function getUserDetails($ip)
     {
         if (env('APP_ENV') !== 'production') {
             return [
@@ -46,7 +46,6 @@ trait Reusables
             ];
         }
 
-        $ip = request()->ip();
         $location = Location::get($ip);
 
         $browser = Browser::browserFamily();

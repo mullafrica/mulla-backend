@@ -154,6 +154,8 @@ class MullaAuthController extends Controller
         Jobs::dispatch([
             'type' => 3,
             'email' => $user->email,
+            'firstname' => $user->firstname,
+            'ip' => request()->ip(),
         ]);
 
         return response()->json([
