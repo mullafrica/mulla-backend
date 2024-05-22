@@ -43,7 +43,7 @@
 
 <body style="background-color: #eeeeee;">
     <div
-        style="margin-top:40px; margin-bottom:40px; padding: 0; font-family: Arial, sans-serif;">
+        style="margin:2.5rem; font-family: Arial, sans-serif;">
         <div class="container">
             <header>
                 <div>
