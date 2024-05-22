@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
-<body style="background-color: #eeeeee; margin: 0; padding: 0;">
+<body style="background-color: #eeeeee; color:black; margin: 0; padding: 0;">
     <div
         style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; padding: 0; background-color: #eeeeee;">
         <div

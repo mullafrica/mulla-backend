@@ -32,6 +32,14 @@ class MullaAuthController extends Controller
 
         if ($user) {
             if (Hash::check($request->password, $user->password)) {
+
+                Jobs::dispatch([
+                    'type' => 'login',
+                    'email' => $user->email,
+                    'firstname' => $user->firstname,
+                    'ip' => request()->ip(),
+                ]);
+
                 return response()->json([
                     'message' => 'Logged in.',
                     'user' => $user,

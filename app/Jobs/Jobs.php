@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Enums\BaseUrls;
 use App\Mail\MullaPasswordResetEmail;
 use App\Mail\MullaResetTokenEmail;
+use App\Mail\MullaUserLoginEmail;
 use App\Mail\MullaWelcomeEmail;
 use App\Models\CustomerVirtualAccountsModel;
 use App\Models\MullaUserCashbackWallets;
@@ -106,7 +107,9 @@ class Jobs implements ShouldQueue
             Mail::to($this->data['email'])->send($email);
         }
 
-        if ($this->data['type'] == 4) {
+        if ($this->data['type'] === 'login') {
+            $email = new MullaUserLoginEmail($this->data);
+            Mail::to($this->data['email'])->send($email);
         }
     }
 }
