@@ -50,9 +50,9 @@ trait Reusables
 
         $location = Location::get($ip);
 
-        $browser = $browser::browserFamily();
+        $browser = $browser->browserFamily();
         // $browserVersion = $browser::browserVersion();
-        $platform = $browser::platformName();
+        $platform = $browser->platformName();
         // $platformVersion = Browser::platformVersion();
 
         return [
