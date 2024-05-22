@@ -462,7 +462,7 @@ class MullaBillController extends Controller
                 ]
             );
 
-            return response()->json(['message' => 'Payment successful.'], 200);
+            return response()->json($res, 200);
         } else {
             /** If error, update or create transaction */
             if ($this->isAirtime($request->serviceID)) return;
