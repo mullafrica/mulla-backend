@@ -44,7 +44,7 @@
 <body style="background-color: #eeeeee;">
     <br /> <br />
     <div
-        style="font-family: Arial, sans-serif;">
+        style="font-family: Arial, sans-serif; padding: 0;">
         <div class="container">
             <header>
                 <div>
