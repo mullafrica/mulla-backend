@@ -14,7 +14,7 @@
 
             <header style="padding-bottom: 2.5rem; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <img src="https://awstestbucket-pk.s3.eu-west-1.amazonaws.com/logo-black.png" alt="Mulla Africa Logo"
+                    <img src="https://awstestbucket-pk.s3.eu-west-1.amazonaws.com/logo-gray.png" alt="Mulla Africa Logo"
                         style="width: 130px;" />
                 </div>
                 <div style="font-size: 12px; text-align: right; flex-grow: 1;">
@@ -23,7 +23,7 @@
             </header>
 
             <div style="margin: 0 -2.5rem; background-color: #fff;">
-                <img src="https://awstestbucket-pk.s3.eu-west-1.amazonaws.com/Asset_1.png" alt="Header Image"
+                <img src="https://awstestbucket-pk.s3.eu-west-1.amazonaws.com/Asset_12.png" alt="Header Image"
                     style="width: 100%; display: block;" />
             </div>
 
