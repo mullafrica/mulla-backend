@@ -13,7 +13,7 @@
             style="padding: 2.5rem; max-width: 600px; margin: 40px auto; background-color: #ffffff; box-sizing: border-box;">
             <header style="border-bottom: 0.05px solid #e2e2e2; padding-bottom: 2.5rem;">
                 <div>
-                    <img src="https://awstestbucket-pk.s3.eu-west-1.amazonaws.com/logo-black.png" alt="Mulla Africa Logo"
+                    <img src="https://awstestbucket-pk.s3.eu-west-1.amazonaws.com/logo-gray.png" alt="Mulla Africa Logo"
                         style="width: 130px;" />
                 </div>
             </header>
