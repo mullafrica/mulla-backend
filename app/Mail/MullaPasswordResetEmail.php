@@ -40,15 +40,15 @@ class MullaPasswordResetEmail extends Mailable
      */
     public function content(): Content
     {
-        $info = $this->getUserDetails($this->data['ip'], $this->data['user_agent']);
+        $info = $this->getUserDetails($this->data['ip']);
 
         return new Content(
             markdown: 'mail.mulla-password-reset-email',
             with: [
                 'firstname' => $this->data['firstname'],
                 'datetime' => Carbon::parse(now())->isoFormat('lll'),
-                'browser' => $info['browser'],
-                'os' => $info['platform'],
+                'browser' => $this->data['browser'],
+                'os' => $this->data['platform'],
                 'location' => $info['location']['city'] . ', ' . $info['location']['country'],
             ],
         );

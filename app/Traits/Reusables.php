@@ -25,10 +25,8 @@ trait Reusables
         ]);
     }
 
-    public function getUserDetails($ip, $userAgent)
+    public function getUserDetails($ip)
     {
-        $browser = Browser::parse($userAgent);
-
         if (env('APP_ENV') !== 'production') {
             return [
                 // 'ip_address' => request()->ip(),
@@ -50,9 +48,9 @@ trait Reusables
 
         $location = Location::get($ip);
 
-        $browser = $browser::browserFamily();
-        // $browserVersion = $browser::browserVersion();
-        $platform = $browser::platformName();
+        $browser = Browser::browserFamily();
+        // $browserVersion = Browser::browserVersion();
+        $platform = Browser::platformName();
         // $platformVersion = Browser::platformVersion();
 
         return [

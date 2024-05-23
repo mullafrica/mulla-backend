@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Traits\Reusables;
 use App\Traits\UniqueId;
 use Carbon\Carbon;
+use hisorange\BrowserDetect\Facade as Browser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
@@ -28,6 +29,9 @@ class MullaAuthController extends Controller
             'password' => 'required',
         ]);
 
+        $browser = Browser::browserFamily();
+        $platform = Browser::platformName();
+
         $user = User::where('phone', $request->phone)->first();
 
         if ($user) {
@@ -38,7 +42,8 @@ class MullaAuthController extends Controller
                     'email' => $user->email,
                     'firstname' => $user->firstname,
                     'ip' => request()->ip(),
-                    'user_agent' =>$request->header('User-Agent')
+                    'browser' =>  $browser,
+                    'platform' => $platform,
                 ]);
 
                 return response()->json([
@@ -138,6 +143,9 @@ class MullaAuthController extends Controller
             'password' => 'required'
         ]);
 
+        $browser = Browser::browserFamily();
+        $platform = Browser::platformName();
+
         $fg = ForgotPasswordTokens::where('token', $request->token)->first();
 
         if (!$fg) {
@@ -165,7 +173,8 @@ class MullaAuthController extends Controller
             'email' => $user->email,
             'firstname' => $user->firstname,
             'ip' => request()->ip(),
-            'user_agent' => $request->header('User-Agent')
+            'browser' =>  $browser,
+            'platform' => $platform,
         ]);
 
         return response()->json([
