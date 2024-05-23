@@ -27,7 +27,7 @@ trait Reusables
 
     public function getUserDetails($ip, $userAgent)
     {
-        $browser = Browser::parse($userAgent);
+        $b = Browser::parse($userAgent);
 
         if (env('APP_ENV') !== 'production') {
             return [
@@ -50,9 +50,9 @@ trait Reusables
 
         $location = Location::get($ip);
 
-        $browser = $browser->browserFamily();
+        $browser = $b->browserFamily();
         // $browserVersion = $browser::browserVersion();
-        $platform = $browser->platformName();
+        $platform = $b->platformName();
         // $platformVersion = Browser::platformVersion();
 
         return [
