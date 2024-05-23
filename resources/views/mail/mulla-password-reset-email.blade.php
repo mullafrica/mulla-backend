@@ -13,7 +13,7 @@
             style="padding: 2.5rem; max-width: 600px; margin: 40px auto; background-color: #ffffff; box-sizing: border-box;">
             <header style="border-bottom: 0.05px solid #e2e2e2; padding-bottom: 2.5rem;">
                 <div>
-                    <img src="https://awstestbucket-pk.s3.eu-west-1.amazonaws.com/logo-gray.png"
+                    <img src="https://cdn.discordapp.com/attachments/1239312008646758533/1243039802018889838/logo-black.png?ex=66500687&is=664eb507&hm=153b256554931d17eca7b4ed77e23c72ff1c6486d68e83b898b1117d16e1717c&"
                         alt="Mulla Africa Logo" style="width: 130px;" />
                 </div>
             </header>
