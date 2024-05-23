@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MullaAuthController;
 use App\Http\Controllers\MullaBillController;
+use App\Http\Controllers\MullaTransactionsController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\Webhooks;
 use Illuminate\Http\Request;
@@ -52,8 +53,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/comet/user/wallets',  [MullaAuthController::class, 'getUserWallets']);
 
     // Store and get txns
-    Route::post('/comet/txn/store', [MullaBillController::class, 'storeTxn']);
-    Route::get('/comet/user/txn/all', [MullaBillController::class, 'getUserTxns']);
+    Route::post('/comet/txn/store', [MullaTransactionsController::class, 'storeTxn']);
+    Route::get('/comet/user/txn', [MullaTransactionsController::class, 'getUserTxns']);
+    Route::get('/comet/user/txn/all', [MullaTransactionsController::class, 'getAllUserTxns']);
+
 
     Route::get(
         '/comet/operator/products/{operatorId}/{bill}',
