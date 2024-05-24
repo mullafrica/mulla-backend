@@ -420,6 +420,11 @@ class MullaBillController extends Controller
                 ],
                 [
                     'bill_reference' => $res->content->transactions->transactionId,
+                    
+                    // New fields
+                    'unique_element' => $res->content->transactions->unique_element ?? '',
+                    'product_name' => $res->content->transactions->product_name ?? '',
+
                     'cashback' => $request->amount * Cashbacks::ELECTRICITY_AEDC,
                     'amount' => $request->amount,
                     'vat' => $res->Tax ?? 0,
