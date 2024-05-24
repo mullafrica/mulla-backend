@@ -101,7 +101,8 @@ class MullaBillController extends Controller
         return response()->json($value, 200);
     }
 
-    public function getUserAirtimeNumbers() {
+    public function getUserAirtimeNumbers()
+    {
         $value = MullaUserAirtimeNumbers::where('user_id', Auth::id())->get();
         return response()->json($value, 200);
     }
@@ -351,7 +352,7 @@ class MullaBillController extends Controller
                 return response(['message' => 'Minimum amount is 500.'], 400);
             }
         }
-        
+
         if ($this->isAirtime($request->serviceID)) {
             $request->validate([
                 'recipient' => 'required|digits:11',
@@ -393,11 +394,15 @@ class MullaBillController extends Controller
             $pay = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
                 'secret-key' => env('VTPASS_SEC_KEY')
+            ])->withOptions([
+                'timeout' => 120,
             ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&amount=' . $request->amount . '&phone=' . $request->recipient);
         } else {
             $pay = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
                 'secret-key' => env('VTPASS_SEC_KEY')
+            ])->withOptions([
+                'timeout' => 120,
             ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $phone);
         }
 
@@ -420,7 +425,7 @@ class MullaBillController extends Controller
                 ],
                 [
                     'bill_reference' => $res->content->transactions->transactionId,
-                    
+
                     // New fields
                     'unique_element' => $res->content->transactions->unique_element ?? '',
                     'product_name' => $res->content->transactions->product_name ?? '',
@@ -473,7 +478,8 @@ class MullaBillController extends Controller
         return $baseId . $randomString . uniqid();
     }
 
-    private function isAirtime($value) {
+    private function isAirtime($value)
+    {
         if ($value === 'glo' || $value === 'mtn' || $value === 'airtel' || $value === 'foreign-airtime' || $value === 'etisalat') {
             return true;
         }
