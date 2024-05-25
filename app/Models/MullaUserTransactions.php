@@ -39,6 +39,6 @@ class MullaUserTransactions extends Model
         if (!$this->unique_element) {
             return null;
         }
-        return MullaUserMeterNumbers::where('meter_number', $this->unique_element)->first()->address;
+        return MullaUserMeterNumbers::where('meter_number', $this->unique_element)->first()->address ?? null;
     }
 }
