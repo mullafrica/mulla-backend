@@ -482,17 +482,17 @@ class MullaBillController extends Controller
         return false;
     }
 
-    public static function cashBack($type)
+    public function cashBack($type)
     {
         if ($type === 'ikeja-electric' || $type === 'abuja-electric' || $type === 'eko-electric' || $type === 'kano-electric' || $type === 'portharcourt-electric' || $type === 'jos-electric' || $type === 'kaduna-electric' || $type === 'enugu-electric' || $type === 'ibadan-electric' || $type === 'benin-electric' || $type === 'aba-electric' || $type === 'yola-electric') {
             return 0.5 / Cashbacks::DIVISOR;
         }
 
-        if ($type === 'airtime') {
+        if ($type === $this->isAirtime($type)) {
             return 1.5 / Cashbacks::DIVISOR;
         }
 
-        if ($type === 'showmax') {
+        if ($type === 'showmax' || $type === 'dstv' || $type === 'gotv' || $type === 'startimes') {
             return 1.5 / Cashbacks::DIVISOR;
         }
 
