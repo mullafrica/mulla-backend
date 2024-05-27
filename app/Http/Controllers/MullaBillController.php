@@ -488,7 +488,7 @@ class MullaBillController extends Controller
             return 0.5 / Cashbacks::DIVISOR;
         }
 
-        if ($type === $this->isAirtime($type)) {
+        if ($this->isAirtime($type)) {
             return 1.5 / Cashbacks::DIVISOR;
         }
 
