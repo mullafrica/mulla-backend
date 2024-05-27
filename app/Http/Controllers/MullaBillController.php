@@ -351,6 +351,8 @@ class MullaBillController extends Controller
             if ($request->amount < 500) {
                 return response(['message' => 'Minimum amount is 500.'], 400);
             }
+
+            $cashback = Cashbacks::ELECTRICITY;
         }
 
         if ($this->isAirtime($request->serviceID)) {
@@ -361,6 +363,8 @@ class MullaBillController extends Controller
             if ($request->amount < 50) {
                 return response(['message' => 'Minimum amount is 50.'], 400);
             }
+
+            $cashback = Cashbacks::AIRTIME;
 
             MullaUserAirtimeNumbers::updateOrCreate([
                 'phone_number' => $request->recipient,
@@ -413,10 +417,10 @@ class MullaBillController extends Controller
 
         if (isset($res->response_description) && $res->response_description === 'TRANSACTION SUCCESSFUL') {
             MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
-                ->increment('balance', $request->amount * Cashbacks::ELECTRICITY_AEDC);
+                ->increment('balance', $request->amount * $cashback ?? Cashbacks::DEFAULT);
 
             MullaUserWallets::updateOrCreate(['user_id' => Auth::id()])
-                ->increment('balance', $request->amount * Cashbacks::ELECTRICITY_AEDC);
+                ->increment('balance', $request->amount * $cashback ?? Cashbacks::DEFAULT);
 
             MullaUserTransactions::updateOrCreate(
                 [
@@ -430,7 +434,7 @@ class MullaBillController extends Controller
                     'unique_element' => $res->content->transactions->unique_element ?? '',
                     'product_name' => $res->content->transactions->product_name ?? '',
 
-                    'cashback' => $request->amount * Cashbacks::ELECTRICITY_AEDC,
+                    'cashback' => $request->amount * $cashback ?? Cashbacks::DEFAULT,
                     'amount' => $request->amount,
                     'vat' => $res->Tax ?? 0,
                     'bill_token' => $res->Reference ?? $res->token ?? $res->Token ?? '',
@@ -454,6 +458,7 @@ class MullaBillController extends Controller
                 ],
                 [
                     'bill_reference' => $res->content->transactions->transactionId,
+                    'cashback' => $request->amount * $cashback ?? Cashbacks::DEFAULT,
                     'amount' => $request->amount,
                     'bill_device_id' => $res->content->transactions->unique_element,
                     'type' => $res->content->transactions->type,
