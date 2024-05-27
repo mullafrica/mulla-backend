@@ -415,7 +415,7 @@ class MullaBillController extends Controller
             MullaUserWallets::updateOrCreate(['user_id' => Auth::id()])
                 ->increment('balance', $request->amount * $this->cashBack($request->serviceID));
 
-            MullaUserTransactions::updateOrCreate(
+            $txn = MullaUserTransactions::updateOrCreate(
                 [
                     'user_id' => Auth::id(),
                     'payment_reference' => $request->payment_reference
@@ -428,9 +428,9 @@ class MullaBillController extends Controller
 
                     'cashback' => $request->amount * $this->cashBack($request->serviceID),
                     'amount' => $request->amount,
-                    'vat' => $res->Tax ?? 0,
-                    'bill_token' => $res->Reference ?? $res->token ?? $res->Token ?? '',
-                    'bill_units' => $res->Units ?? $res->units ?? '',
+                    'vat' => $res->Tax ?? $res->mainTokenTax ?? 0,
+                    'bill_token' => $res->Reference ?? $res->token ?? $res->Token ?? $res->mainToken ?? '',
+                    'bill_units' => $res->Units ?? $res->units ?? $res->mainTokenUnits ?? '',
                     'bill_device_id' => $res->content->transactions->unique_element ?? '',
                     'type' => $res->content->transactions->type ?? '',
                     'voucher_code' => $res->purchased_code ?? $res->Voucher[0] ?? '',
@@ -438,7 +438,7 @@ class MullaBillController extends Controller
                 ]
             );
 
-            return response()->json($res, 200);
+            return response()->json($txn, 200);
         } else {
             if ($this->isAirtime($request->serviceID)) return;
 
