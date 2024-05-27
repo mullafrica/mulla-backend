@@ -326,7 +326,6 @@ class MullaBillController extends Controller
 
     public function payVTPassBill(Request $request, WalletService $ws)
     {
-        /** Validate data */
         $request_id = $this->generateRequestId();
 
         $request->validate([
@@ -351,8 +350,6 @@ class MullaBillController extends Controller
             if ($request->amount < 500) {
                 return response(['message' => 'Minimum amount is 500.'], 400);
             }
-
-            $cashback = Cashbacks::ELECTRICITY;
         }
 
         if ($this->isAirtime($request->serviceID)) {
@@ -363,8 +360,6 @@ class MullaBillController extends Controller
             if ($request->amount < 50) {
                 return response(['message' => 'Minimum amount is 50.'], 400);
             }
-
-            $cashback = Cashbacks::AIRTIME;
 
             MullaUserAirtimeNumbers::updateOrCreate([
                 'phone_number' => $request->recipient,
@@ -393,7 +388,6 @@ class MullaBillController extends Controller
             }
         }
 
-        /** Make api calls */
         if ($this->isAirtime($request->serviceID)) {
             $pay = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
@@ -412,15 +406,14 @@ class MullaBillController extends Controller
 
         $res = $pay->object();
 
-        /** Log http response */
         DiscordBots::dispatch(['message' => json_encode($res)]);
 
         if (isset($res->response_description) && $res->response_description === 'TRANSACTION SUCCESSFUL') {
             MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
-                ->increment('balance', $request->amount * $cashback ?? Cashbacks::DEFAULT);
+                ->increment('balance', $request->amount * $this->cashBack($request->serviceID));
 
             MullaUserWallets::updateOrCreate(['user_id' => Auth::id()])
-                ->increment('balance', $request->amount * $cashback ?? Cashbacks::DEFAULT);
+                ->increment('balance', $request->amount * $this->cashBack($request->serviceID));
 
             MullaUserTransactions::updateOrCreate(
                 [
@@ -430,11 +423,10 @@ class MullaBillController extends Controller
                 [
                     'bill_reference' => $res->content->transactions->transactionId,
 
-                    // New fields
                     'unique_element' => $res->content->transactions->unique_element ?? '',
                     'product_name' => $res->content->transactions->product_name ?? '',
 
-                    'cashback' => $request->amount * $cashback ?? Cashbacks::DEFAULT,
+                    'cashback' => $request->amount * $this->cashBack($request->serviceID),
                     'amount' => $request->amount,
                     'vat' => $res->Tax ?? 0,
                     'bill_token' => $res->Reference ?? $res->token ?? $res->Token ?? '',
@@ -448,7 +440,6 @@ class MullaBillController extends Controller
 
             return response()->json($res, 200);
         } else {
-            /** If error, update or create transaction */
             if ($this->isAirtime($request->serviceID)) return;
 
             MullaUserTransactions::updateOrCreate(
@@ -458,7 +449,7 @@ class MullaBillController extends Controller
                 ],
                 [
                     'bill_reference' => $res->content->transactions->transactionId,
-                    'cashback' => $request->amount * $cashback ?? Cashbacks::DEFAULT,
+                    'cashback' => $request->amount * $this->cashBack($request->serviceID),
                     'amount' => $request->amount,
                     'bill_device_id' => $res->content->transactions->unique_element,
                     'type' => $res->content->transactions->type,
@@ -489,5 +480,22 @@ class MullaBillController extends Controller
             return true;
         }
         return false;
+    }
+
+    public static function cashBack($type)
+    {
+        if ($type === 'ikeja-electric' || $type === 'abuja-electric' || $type === 'eko-electric' || $type === 'kano-electric' || $type === 'portharcourt-electric' || $type === 'jos-electric' || $type === 'kaduna-electric' || $type === 'enugu-electric' || $type === 'ibadan-electric' || $type === 'benin-electric' || $type === 'aba-electric' || $type === 'yola-electric') {
+            return 0.5 / Cashbacks::DIVISOR;
+        }
+
+        if ($type === 'airtime') {
+            return 1.5 / Cashbacks::DIVISOR;
+        }
+
+        if ($type === 'showmax') {
+            return 1.5 / Cashbacks::DIVISOR;
+        }
+
+        return 0.5 / Cashbacks::DIVISOR;
     }
 }
