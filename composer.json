@@ -12,6 +12,7 @@
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
         "predis/predis": "^2.0",
+        "spatie/laravel-ray": "^1.36",
         "stevebauman/location": "^7.2"
     },
     "require-dev": {

@@ -45,54 +45,56 @@ class Jobs implements ShouldQueue
          * 
          * 
          * 1 -> Add to Brevo
-         * 2 -> Create Wallet
-         * 3 -> Create Cashback Wallet
-         * 4 -> Create Paystack Customer
-         * 5 -> Create DVA
+         * 2 -> Create Wallet [disable]
+         * 3 -> Create Cashback Wallet [disable]
+         * 4 -> Create Paystack Customer [disable]
+         * 5 -> Create DVA [disable]
          * 7 -> Send Email
          * 
          */
-        if ($this->data['type'] == 1) {
+        if ($this->data['type'] === 'create_account') {
             // 1 -> Add to Brevo
-            Http::withHeaders([
-                'accept' => 'application/json',
-                'api-key' => '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',
-                'content-type' => 'application/json'
-            ])->post('https://api.brevo.com/v3/contacts', [
-                "attributes" => [
-                    "firstname" =>  $this->data['firstname'],
-                    "lastname" => $this->data['lastname'],
-                ],
-                "email" => $this->data['email'],
-                "updateEnabled" => false
-            ]);
+            if (env('APP_ENV') === 'production') {
+                Http::withHeaders([
+                    'accept' => 'application/json',
+                    'api-key' => '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',
+                    'content-type' => 'application/json'
+                ])->post('https://api.brevo.com/v3/contacts', [
+                    "attributes" => [
+                        "firstname" =>  $this->data['firstname'],
+                        "lastname" => $this->data['lastname'],
+                    ],
+                    "email" => $this->data['email'],
+                    "updateEnabled" => false
+                ]);
+            }
 
-            // 2 -> Create Wallet
-            MullaUserWallets::updateOrCreate([
-                'user_id' => $this->data['user_id'],
-            ]);
+            // // 2 -> Create Wallet
+            // MullaUserWallets::updateOrCreate([
+            //     'user_id' => $this->data['user_id'],
+            // ]);
 
-            // 3 -> Create Cashback Wallet
-            MullaUserCashbackWallets::updateOrCreate([
-                'user_id' => $this->data['user_id'],
-            ]);
+            // // 3 -> Create Cashback Wallet
+            // MullaUserCashbackWallets::updateOrCreate([
+            //     'user_id' => $this->data['user_id'],
+            // ]);
 
-            // 4 -> Create Paystack Customer
-            $pt = $va->createCustomer([
-                'user_id' => $this->data['user_id'],
-                'email' => $this->data['email'],
-                'firstname' => $this->data['firstname'],
-                'lastname' => $this->data['lastname'],
-                'phone' => $this->data['phone'],
-            ]);
+            // // 4 -> Create Paystack Customer
+            // $pt = $va->createCustomer([
+            //     'user_id' => $this->data['user_id'],
+            //     'email' => $this->data['email'],
+            //     'firstname' => $this->data['firstname'],
+            //     'lastname' => $this->data['lastname'],
+            //     'phone' => $this->data['phone'],
+            // ]);
 
-            // 5 -> Create DVA
-            $va->createVirtualAccount($pt, [
-                'user_id' => $this->data['user_id'],
-                'firstname' => $this->data['firstname'],
-                'lastname' => $this->data['lastname'],
-                'phone' => $this->data['phone'],
-            ]);
+            // // 5 -> Create DVA
+            // $va->createVirtualAccount($pt, [
+            //     'user_id' => $this->data['user_id'],
+            //     'firstname' => $this->data['firstname'],
+            //     'lastname' => $this->data['lastname'],
+            //     'phone' => $this->data['phone'],
+            // ]);
 
             // 7 -> Send Email
             $email = new MullaWelcomeEmail($this->data);

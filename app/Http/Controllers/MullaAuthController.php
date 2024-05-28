@@ -9,6 +9,7 @@ use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserWallets;
 use App\Models\User;
 use App\Models\VerifyEmailToken;
+use App\Services\VirtualAccount;
 use App\Traits\Reusables;
 use App\Traits\UniqueId;
 use Carbon\Carbon;
@@ -90,7 +91,7 @@ class MullaAuthController extends Controller
         return response(['message' => 'Token sent. Please check your email.'], 200);
     }
 
-    public function register(Request $request)
+    public function register(Request $request, VirtualAccount $va)
     {
         $request->validate([
             'token' => 'required',
@@ -119,8 +120,35 @@ class MullaAuthController extends Controller
             'email' => $request->email ? $request->email : null,
         ]);
 
+        // 2 -> Create Wallet
+        MullaUserWallets::updateOrCreate([
+            'user_id' => $user->id,
+        ]);
+
+        // 3 -> Create Cashback Wallet
+        MullaUserCashbackWallets::updateOrCreate([
+            'user_id' => $user->id,
+        ]);
+
+        // 4 -> Create Paystack Customer
+        $pt = $va->createCustomer([
+            'user_id' => $user->id,
+            'email' => $request->email,
+            'firstname' => $request->firstname,
+            'lastname' => $request->lastname,
+            'phone' => $request->phone,
+        ]);
+
+        // 5 -> Create DVA
+        $va->createVirtualAccount($pt, [
+            'user_id' => $user->id,
+            'firstname' => $request->firstname,
+            'lastname' => $request->lastname,
+            'phone' => $request->phone,
+        ]);
+
         Jobs::dispatch([
-            'type' => 1,
+            'type' => 'create_account',
             'user_id' => $user->id,
             'firstname' => $request->firstname,
             'lastname' => $request->lastname,
