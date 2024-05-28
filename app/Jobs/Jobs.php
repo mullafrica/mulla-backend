@@ -68,12 +68,12 @@ class Jobs implements ShouldQueue
             ]);
 
             // 2 -> Create Wallet
-            MullaUserWallets::create([
+            MullaUserWallets::updateOrCreate([
                 'user_id' => $this->data['user_id'],
             ]);
 
             // 3 -> Create Cashback Wallet
-            MullaUserCashbackWallets::create([
+            MullaUserCashbackWallets::updateOrCreate([
                 'user_id' => $this->data['user_id'],
             ]);
 
