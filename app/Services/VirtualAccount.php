@@ -24,9 +24,10 @@ class VirtualAccount implements IVirtualAccount
             'phone' => $data['phone'],
         ]);
 
-        CustomerVirtualAccountsModel::create([
-            'user_id' => $data['user_id'],
+        CustomerVirtualAccountsModel::updateOrCreate([
             'customer_id' => $pt_customer->object()->data->customer_code ?? null,
+        ], [
+            'user_id' => $data['user_id'],
         ]);
 
         return $pt_customer->object();
@@ -52,7 +53,7 @@ class VirtualAccount implements IVirtualAccount
 
         if ($pt_account->successful()) {
             $this->sendToDiscord('DVA created for ' . $data['firstname'] . ' (ID:' . $data['user_id'] . ')');
-            return true; 
+            return true;
         } else {
             $this->sendToDiscord('An error occured while creating DVA for ' . $data['firstname'] . ' (ID:' . $data['user_id'] . ')');
             return false;
