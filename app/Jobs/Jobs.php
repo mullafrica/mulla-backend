@@ -57,7 +57,7 @@ class Jobs implements ShouldQueue
             if (env('APP_ENV') === 'production') {
                 Http::withHeaders([
                     'accept' => 'application/json',
-                    'api-key' => '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',
+                    'api-key' => env('BREVO_KEY'),
                     'content-type' => 'application/json'
                 ])->post('https://api.brevo.com/v3/contacts', [
                     "attributes" => [
