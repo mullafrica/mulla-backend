@@ -26,6 +26,9 @@ use Illuminate\Support\Facades\Route;
 /////////////////////////////// COMET //////////////////////////////
 Route::post('/comet/auth', [MullaAuthController::class, 'login']);
 Route::post('/comet/auth/register', [MullaAuthController::class, 'register']);
+Route::post('/comet/auth/verify', [MullaAuthController::class, 'registrationToken']);
+
+
 Route::post('/comet/auth/token', [MullaAuthController::class, 'sendToken']);
 Route::post('/comet/auth/password/reset', [MullaAuthController::class, 'resetPassword']);
 Route::post('/comet/bloc/webhook', [Webhooks::class, 'blocWebhooks']);

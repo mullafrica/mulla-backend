@@ -20,25 +20,11 @@
 
             <div
                 style="margin-top: 40px; background-color: #fff; box-sizing: border-box; border-radius: 0 0 0.75rem 0.75rem;">
-                <div style="padding-bottom: 2rem; font-size: 15px;">Hi {{ $firstname ?? '' }},</div>
-                <div style="padding-bottom: 2rem; font-size: 15px;">You have successfully updated your password for your
-                    Mulla Account.</div>
-                <div style="padding-bottom: 2rem; font-size: 15px;">Thank you for using Mulla, <br /> Your Friends at
-                    Mulla.</div>
-                <div style="padding-bottom: 2rem; font-size: 15px;">
-                    <div><b>Date:</b> {{ $datetime ?? '' }}</div>
-                    <div><b>Browser:</b> {{ $browser ?? '' }}</div>
-                    <div><b>Operating System:</b> {{ $os ?? '' }}</div>
-                    <div><b>Approximate Location:</b> {{ $location ?? '' }}</div>
-                </div>
-
-                <div style="padding-bottom: 2rem; font-size: 15px;">
-                    Didn't request this change, Be sure to change your password
-                    right away. Still need help? please reply to this email or contact us at <a
-                        href="mailto:support@mulla.africa"
-                        style="color: inherit; text-decoration: underline;">support@mulla.africa</a> right away.
-                </div>
-
+                <div style="padding-bottom: 2rem; font-size: 15px;">{{ $firstname ?? '' }},</div>
+                <div style="padding-bottom: 2rem; font-size: 15px;">Please enter the following 6-digit code to verify
+                    your email address.</div>
+                <div style="font-size: 30px; padding-bottom: 2rem;">{{ $token ?? '' }}</div>
+                <div style="padding-bottom: 2rem; font-size: 15px;">This code expires in 5 minutes.</div>
                 <div style="font-size: 12px; margin-top: 25px;">
                     <div style="padding-bottom: 8px;">&copy; 2024. Mulla Africa.</div>
                     <div>The everyday bill payments app for Africans.</div>

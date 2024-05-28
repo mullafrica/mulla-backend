@@ -12,7 +12,7 @@
 
             <header style="padding: 2.5rem; display: flex; justify-content: space-between; align-items: center;">
                 <div style="flex: 1;">
-                    <img src="https://cdn.discordapp.com/attachments/1239312008646758533/1243039802018889838/logo-black.png?ex=66500687&is=664eb507&hm=153b256554931d17eca7b4ed77e23c72ff1c6486d68e83b898b1117d16e1717c&" alt="Mulla Africa Logo" style="width: 130px;" />
+                    <img src="https://awstestbucket-pk.s3.eu-west-1.amazonaws.com/logo-black.png" alt="Mulla Africa Logo" style="width: 130px;" />
                 </div>
                 {{-- <div style="font-size: 12px; text-align: right; flex: 1; display: flex; justify-content: flex-end; align-items: center;">
                     <span>Receipt</span>

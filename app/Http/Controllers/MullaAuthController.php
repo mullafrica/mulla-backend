@@ -8,6 +8,7 @@ use App\Models\ForgotPasswordTokens;
 use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserWallets;
 use App\Models\User;
+use App\Models\VerifyEmailToken;
 use App\Traits\Reusables;
 use App\Traits\UniqueId;
 use Carbon\Carbon;
@@ -63,7 +64,7 @@ class MullaAuthController extends Controller
         }
     }
 
-    public function register(Request $request)
+    public function registrationToken(Request $request)
     {
         $request->validate([
             'firstname' => 'required',
@@ -73,20 +74,50 @@ class MullaAuthController extends Controller
             'email' => 'email|unique:users,email',
         ]);
 
-        // Check if user already exists
+        $vt = VerifyEmailToken::updateOrCreate([
+            'email' => $request->email,
+        ], [
+            'token' => Str::upper($this->uuid_ag2()),
+        ]);
+
+        Jobs::dispatch([
+            'type' => 'verify_email',
+            'token' => $vt->token,
+            'firstname' => $request->firstname,
+            'email' => $request->email,
+        ]);
+
+        return response(['message' => 'Token sent. Please check your email.'], 200);
+    }
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+        ]);
+
+        // Verify token
+        if ($vt = VerifyEmailToken::where('token', $request->token)->where('email', $request->email)->first()) {
+            $vt->delete();
+        } else {
+            return response(['message' => 'Invalid token, please request for a new one.'], 401);
+        }
+
+        // Check if user exists
         if (User::where('phone', $request->phone)->exists()) {
             return response()->json([
                 'message' => 'Account with this phone number already exists, please sign in.'
             ]);
         }
 
+        // Create user
         $user = User::create([
             'firstname' => $request->firstname,
             'lastname' => $request->lastname,
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'email' => $request->email ? $request->email : null,
-        ]);        
+        ]);
 
         Jobs::dispatch([
             'type' => 1,

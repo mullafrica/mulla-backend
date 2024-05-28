@@ -7,6 +7,7 @@ use App\Mail\MullaPasswordResetEmail;
 use App\Mail\MullaResetTokenEmail;
 use App\Mail\MullaUserFundWalletEmail;
 use App\Mail\MullaUserLoginEmail;
+use App\Mail\MullaVerifyUserEmail;
 use App\Mail\MullaWelcomeEmail;
 use App\Models\CustomerVirtualAccountsModel;
 use App\Models\MullaUserCashbackWallets;
@@ -115,6 +116,11 @@ class Jobs implements ShouldQueue
 
         if ($this->data['type'] === 'fund_wallet') {
             $email = new MullaUserFundWalletEmail($this->data);
+            Mail::to($this->data['email'])->send($email);
+        }
+
+        if ($this->data['type'] === 'verify_email') {
+            $email = new MullaVerifyUserEmail($this->data);
             Mail::to($this->data['email'])->send($email);
         }
     }
