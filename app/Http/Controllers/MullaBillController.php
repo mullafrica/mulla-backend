@@ -401,7 +401,7 @@ class MullaBillController extends Controller
                 'secret-key' => env('VTPASS_SEC_KEY')
             ])->withOptions([
                 'timeout' => 120,
-            ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $phone);
+            ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $request->recipient ?? $phone);
         }
 
         $res = $pay->object();
