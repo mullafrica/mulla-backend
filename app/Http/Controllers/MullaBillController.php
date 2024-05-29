@@ -441,6 +441,7 @@ class MullaBillController extends Controller
             return response()->json($txn, 200);
         } else {
             if ($this->isAirtime($request->serviceID)) return;
+            if ($this->isData($request->serviceID)) return;
 
             MullaUserTransactions::updateOrCreate(
                 [
@@ -482,10 +483,22 @@ class MullaBillController extends Controller
         return false;
     }
 
+    public function isData($value)
+    {
+        if ($value === 'airtel-data' || $value === 'glo-data' || $value === 'mtn-data' || $value === 'etisalat-data' || $value === 'smile-direct' || $value === 'spectranet' || $value === 'glo-sme-data' || $value === '9mobile-sme-data') {
+            return true;
+        }
+        return false;
+    }
+
     public function cashBack($type)
     {
         if ($type === 'ikeja-electric' || $type === 'abuja-electric' || $type === 'eko-electric' || $type === 'kano-electric' || $type === 'portharcourt-electric' || $type === 'jos-electric' || $type === 'kaduna-electric' || $type === 'enugu-electric' || $type === 'ibadan-electric' || $type === 'benin-electric' || $type === 'aba-electric' || $type === 'yola-electric') {
             return 0.5 / Cashbacks::DIVISOR;
+        }
+
+        if ($type === 'airtel-data' || $type === 'glo-data' || $type === 'mtn-data' || $type === 'etisalat-data' || $type === 'smile-direct' || $type === 'spectranet' || $type === 'glo-sme-data' || $type === '9mobile-sme-data') {
+            return 1.5 / Cashbacks::DIVISOR;
         }
 
         if ($this->isAirtime($type)) {
