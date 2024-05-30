@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Business\MullaBusinessAuthController;
 use App\Http\Controllers\MullaAuthController;
 use App\Http\Controllers\MullaBillController;
 use App\Http\Controllers\MullaTransactionsController;
@@ -28,13 +29,13 @@ Route::post('/comet/auth', [MullaAuthController::class, 'login']);
 Route::post('/comet/auth/register', [MullaAuthController::class, 'register']);
 Route::post('/comet/auth/verify', [MullaAuthController::class, 'registrationToken']);
 
-
 Route::post('/comet/auth/token', [MullaAuthController::class, 'sendToken']);
 Route::post('/comet/auth/password/reset', [MullaAuthController::class, 'resetPassword']);
 Route::post('/comet/bloc/webhook', [Webhooks::class, 'blocWebhooks']);
 Route::post('/comet/webhook/all', [Webhooks::class, 'all']);
 
-
+Route::post('/business/auth/register', [MullaBusinessAuthController::class, 'register']);
+Route::post('/business/auth/login', [MullaBusinessAuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/comet/logout', [MullaAuthController::class, 'logout']);
@@ -51,15 +52,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/comet/user/tv/card/numbers',  [MullaBillController::class, 'getUserTvCardNumbers']);
     Route::get('/comet/user/airtime/numbers',  [MullaBillController::class, 'getUserAirtimeNumbers']);
 
-    
-
     Route::get('/comet/user/wallets',  [MullaAuthController::class, 'getUserWallets']);
 
     // Store and get txns
     Route::post('/comet/txn/store', [MullaTransactionsController::class, 'storeTxn']);
     Route::get('/comet/user/txn', [MullaTransactionsController::class, 'getUserTxns']);
     Route::get('/comet/user/txn/all', [MullaTransactionsController::class, 'getAllUserTxns']);
-
 
     Route::get(
         '/comet/operator/products/{operatorId}/{bill}',

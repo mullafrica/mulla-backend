@@ -40,6 +40,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        'business' => [
+            'driver' => 'session',
+            'provider' => 'businesses',
+        ],
     ],
 
     /*
@@ -65,10 +70,10 @@ return [
             'model' => App\Models\User::class,
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'businesses' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Business\MullaBusinessAccountsModel::class,
+        ],
     ],
 
     /*
