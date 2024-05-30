@@ -395,13 +395,20 @@ class MullaBillController extends Controller
             ])->withOptions([
                 'timeout' => 120,
             ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&amount=' . $request->amount . '&phone=' . $request->recipient);
+        } elseif ($this->isData($request->serviceID)) {
+            $pay = Http::withHeaders([
+                'api-key' => env('VTPASS_API_KEY'),
+                'secret-key' => env('VTPASS_SEC_KEY')
+            ])->withOptions([
+                'timeout' => 120,
+            ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $request->recipient);
         } else {
             $pay = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
                 'secret-key' => env('VTPASS_SEC_KEY')
             ])->withOptions([
                 'timeout' => 120,
-            ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $request->recipient ?? $phone);
+            ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $phone);
         }
 
         $res = $pay->object();
