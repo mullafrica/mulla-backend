@@ -64,7 +64,7 @@ class MullaBusinessAuthController extends Controller
             'password' => 'required|min:8',
         ]);
 
-        if (!$request->access_code === 'mullabiz') {
+        if ($request->access_code !== 'mullabiz') {
             return response()->json([
                 'message' => 'Access code is incorrect.'
             ], 401);
