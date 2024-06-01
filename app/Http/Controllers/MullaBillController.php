@@ -255,6 +255,8 @@ class MullaBillController extends Controller
             $validate = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
                 'secret-key' => env('VTPASS_SEC_KEY')
+            ])->withOptions([
+                'timeout' => 120,
             ])->post($this->vtp_endpoint . 'merchant-verify?billersCode=' . $request->device_number . '&serviceID=' . $op_id . '&type=' . $request->meter_type);
 
             $data = $validate->object();
