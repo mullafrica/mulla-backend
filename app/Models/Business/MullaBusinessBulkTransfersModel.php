@@ -20,10 +20,16 @@ class MullaBusinessBulkTransfersModel extends Model
 
     protected $appends = [
         'total_amount',
+        'count'
     ];
 
     public function transactions() {
         return $this->hasMany(MullaBusinessBulkTransferTransactions::class, 'bulk_transfer_id', 'id');
+    }
+
+    public function getCountAttribute()
+    {
+        return $this->transactions()->count();
     }
 
     public function getTotalAmountAttribute()
