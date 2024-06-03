@@ -30,7 +30,7 @@ class MullaBusinessBulkTransferTransactions extends Model
 
     public function setCreatedAtAttribute($value)
     {
-        $this->attributes['amount'] = Carbon::create($value);
+        $this->attributes['created_at'] = Carbon::create($value);
     }
 
     public function getAmountAttribute($value)
