@@ -68,4 +68,38 @@ class MullaBusinessBulkTransferController extends Controller
         return response($bulkTransfers, 200);
     }
 
+    public function uploadTransfers(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt',
+            'id' => 'required|numeric'
+        ]);
+
+        $file = $request->file('file');
+        $filePath = $file->getRealPath();
+
+        if (($handle = fopen($filePath, 'r')) !== false) {
+            $header = fgetcsv($handle, 1000, ',');
+
+            while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+                $transferData = array_combine($header, $data);
+
+                MullaBusinessBulkTransferTransactions::updateOrCreate([
+                    'reference' => $transferData['REFERENCE'],
+                ], [
+                    'bulk_transfer_id' => $request->id,
+                    'pt_recipient_id' => $transferData['RECIPIENT ID'],
+                    'currency' => $transferData['CURRENCY'],
+                    'amount' => $transferData['AMOUNT'],
+                    'recipient_account_no' => $transferData['RECIPIENT A/C NO'],
+                    'recipient_account_name' => $transferData['RECIPIENT A/C NAME'],
+                    'recipient_bank' => $transferData['RECIPIENT BANK'],
+                ]);
+            }
+
+            fclose($handle);
+        }
+
+        return response()->json(['message' => 'CSV data imported successfully'], 200);
+    }
 }
