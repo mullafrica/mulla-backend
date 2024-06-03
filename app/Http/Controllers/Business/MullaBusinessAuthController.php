@@ -34,10 +34,12 @@ class MullaBusinessAuthController extends Controller
                 //     'platform' => $platform,
                 // ]);
 
+                $token = $user->createToken($request->email)->plainTextToken;
+
                 return response()->json([
                     'message' => 'Logged in.',
                     'user' => $user,
-                    'token' => $user->createToken($request->email)->plainTextToken
+                    'token' => $token
                 ], 200);
             } else {
                 return response()->json([

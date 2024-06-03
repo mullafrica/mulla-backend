@@ -16,5 +16,10 @@ trait UniqueId {
     {
         return substr(md5(microtime()), 0, 6);
     }
+
+    protected function uuid12()
+    {
+        return substr(md5(microtime()), 0, 12);
+    }
 }
 

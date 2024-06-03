@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Business\MullaBusinessAuthController;
+use App\Http\Controllers\Business\MullaBusinessBulkTransferController;
 use App\Http\Controllers\MullaAuthController;
 use App\Http\Controllers\MullaBillController;
 use App\Http\Controllers\MullaTransactionsController;
@@ -69,4 +70,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // Wallet
     Route::get('/comet/wallet/dva', [WalletController::class, 'getVirtualAccount']);
     Route::post('/comet/wallet/pay', [WalletController::class, 'payWithWallet']);
+});
+
+
+Route::middleware('auth:business')->group( function () {
+    Route::post('/business/bulktransfer', [MullaBusinessBulkTransferController::class, 'createBulkTransfer']);
+    Route::get('/business/bulktransfer', [MullaBusinessBulkTransferController::class, 'getBulkTransfers']);
+
+    Route::post('/business/bt/transaction', [MullaBusinessBulkTransferController::class, 'createBTTransaction']);
+    Route::get('/business/bt/transaction/{id}', [MullaBusinessBulkTransferController::class, 'getBTBusinessTransactions']);
+
+    
 });
