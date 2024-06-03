@@ -86,8 +86,8 @@ class MullaBusinessBulkTransferController extends Controller
 
                 MullaBusinessBulkTransferTransactions::updateOrCreate([
                     'reference' => $transferData['REFERENCE'],
-                ], [
                     'bulk_transfer_id' => $request->id,
+                ], [
                     'pt_recipient_id' => $transferData['RECIPIENT ID'],
                     'currency' => $transferData['CURRENCY'],
                     'amount' => $transferData['AMOUNT'],
