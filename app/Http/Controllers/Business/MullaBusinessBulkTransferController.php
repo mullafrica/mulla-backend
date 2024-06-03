@@ -94,6 +94,7 @@ class MullaBusinessBulkTransferController extends Controller
                     'recipient_account_no' => $transferData['RECIPIENT A/C NO'],
                     'recipient_account_name' => $transferData['RECIPIENT A/C NAME'],
                     'recipient_bank' => $transferData['RECIPIENT BANK'],
+                    'created_at' => $transferData['TRANSFER DATE'],
                 ]);
             }
 
