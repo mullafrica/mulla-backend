@@ -29,7 +29,7 @@ class MullaBusinessBulkTransferTransactions extends Model
 
     public function getAmountAttribute($value)
     {
-        return $value / 100;
+        return number_format($value / 100, 2);
     }
 
     public function getCreatedAtAttribute($value)

@@ -28,7 +28,7 @@ class MullaBusinessBulkTransfersModel extends Model
 
     public function getTotalAmountAttribute()
     {
-        return $this->transactions()->sum('amount') / 100;
+        return number_format($this->transactions()->sum('amount') / 100, 2);
     }
 
     public function getCreatedAtAttribute($value)
