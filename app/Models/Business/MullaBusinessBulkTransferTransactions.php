@@ -20,11 +20,17 @@ class MullaBusinessBulkTransferTransactions extends Model
         'recipient_account_name',
         'recipient_bank',
         'status',
+        'created_at'
     ];
 
     public function setAmountAttribute($value)
     {
         $this->attributes['amount'] = $value * 100;
+    }
+
+    public function setCreatedAtAttribute($value)
+    {
+        $this->attributes['amount'] = Carbon::create($value);
     }
 
     public function getAmountAttribute($value)
