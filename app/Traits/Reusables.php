@@ -5,6 +5,7 @@ namespace App\Traits;
 use GuzzleHttp\Client;
 use Stevebauman\Location\Facades\Location;
 use hisorange\BrowserDetect\Facade as Browser;
+use Illuminate\Support\Facades\Http;
 
 trait Reusables
 {

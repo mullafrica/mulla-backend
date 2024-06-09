@@ -9,6 +9,8 @@ use App\Traits\Reusables;
 use App\Traits\UniqueId;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 class MullaBusinessBulkTransferController extends Controller
 {
@@ -102,5 +104,25 @@ class MullaBusinessBulkTransferController extends Controller
         }
 
         return response()->json(['message' => 'CSV data imported successfully'], 200);
+    }
+
+    public static function getBanks()
+    {
+        return Cache::remember('pt_banks', 60 * 24 * 7, function () {
+            $data = Http::withToken(env('MULLA_PAYSTACK_LIVE'))->get('https://api.paystack.co/bank');
+            $banks = $data->object()->data;
+
+            // Extract only the required fields
+            $filteredBanks = array_map(function ($bank) {
+                return [
+                    'id' => $bank->id,
+                    'name' => $bank->name,
+                    'slug' => $bank->slug,
+                    'code' => $bank->code
+                ];
+            }, $banks);
+
+            return $filteredBanks;
+        });
     }
 }

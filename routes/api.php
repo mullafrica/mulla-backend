@@ -8,6 +8,7 @@ use App\Http\Controllers\MullaTransactionsController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\Webhooks;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -37,6 +38,10 @@ Route::post('/comet/webhook/all', [Webhooks::class, 'all']);
 
 Route::post('/business/auth/register', [MullaBusinessAuthController::class, 'register']);
 Route::post('/business/auth/login', [MullaBusinessAuthController::class, 'login']);
+
+Route::get('/m/banks', function () {
+    return MullaBusinessBulkTransferController::getBanks();
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/comet/logout', [MullaAuthController::class, 'logout']);
@@ -80,8 +85,5 @@ Route::middleware('auth:business')->group( function () {
     Route::post('/business/bt/transaction', [MullaBusinessBulkTransferController::class, 'createBTTransaction']);
     Route::get('/business/bt/transaction/{id}', [MullaBusinessBulkTransferController::class, 'getBTBusinessTransactions']);
 
-
     Route::post('/business/bt/transactions/upload', [MullaBusinessBulkTransferController::class, 'uploadTransfers']);
-
-    
 });
