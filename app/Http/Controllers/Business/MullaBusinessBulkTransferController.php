@@ -1,10 +1,22 @@
 <?php
 
+/***
+ * 
+ * 
+ * 
+ * 
+ * The faster it fails, the better. 
+ * 
+ * 
+ * 
+ */
+
 namespace App\Http\Controllers\Business;
 
 use App\Http\Controllers\Controller;
 use App\Models\Business\MullaBusinessBulkTransfersModel;
 use App\Models\Business\MullaBusinessBulkTransferTransactions;
+use App\Services\BulkTransferService;
 use App\Traits\Reusables;
 use App\Traits\UniqueId;
 use Illuminate\Http\Request;
@@ -124,5 +136,38 @@ class MullaBusinessBulkTransferController extends Controller
 
             return $filteredBanks;
         });
+    }
+
+    /**
+     * 
+     * Lists
+     * 
+     */
+    public function createBulkTransferList(Request $request, BulkTransferService $bts)
+    {
+        $request->validate([
+            'data' => 'required|array',
+            'name' => 'required|string'
+        ]);
+
+        return $bts->createList(
+            $request->data,
+            $request->name
+        );
+    }
+
+    public function getBulkTransferLists(BulkTransferService $bts)
+    {
+        return $bts->getLists();
+    }
+
+    public function getBulkTransferListItems($id, BulkTransferService $bts)
+    {
+        return $bts->getListItems($id);
+    }
+
+    public function deleteBulkTransferList($id, BulkTransferService $bts)
+    {
+        return $bts->deleteList($id);
     }
 }

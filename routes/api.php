@@ -86,4 +86,10 @@ Route::middleware('auth:business')->group( function () {
     Route::get('/business/bt/transaction/{id}', [MullaBusinessBulkTransferController::class, 'getBTBusinessTransactions']);
 
     Route::post('/business/bt/transactions/upload', [MullaBusinessBulkTransferController::class, 'uploadTransfers']);
+
+    Route::post('/business/bulk-transfer/list', [MullaBusinessBulkTransferController::class, 'createBulkTransferList']);
+    Route::get('/business/bulk-transfer/list', [MullaBusinessBulkTransferController::class, 'getBulkTransferLists']);
+    Route::get('/business/bulk-transfer/list/{id}', [MullaBusinessBulkTransferController::class, 'getBulkTransferListItems']);
+    Route::delete('/business/bulk-transfer/list/{id}', [MullaBusinessBulkTransferController::class, 'deleteBulkTransferList']);
+
 });
