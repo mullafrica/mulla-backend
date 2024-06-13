@@ -29,7 +29,7 @@ class MullaUserTransactionEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Mulla User Transaction Email',
+            subject: $this->data['firstname'] . ', your transaction was successful.',
         );
     }
 
@@ -40,6 +40,19 @@ class MullaUserTransactionEmail extends Mailable
     {
         return new Content(
             markdown: 'mail.mulla-user-transaction-email',
+            with: [
+                'firstname' => $this->data['firstname'],
+                'utility' => $this->data['utility'],
+                'amount' => $this->data['amount'],
+                'date' => $this->data['date'],
+                'cashback' => $this->data['cashback'],
+                'code' => $this->data['code'],
+                'serial' => $this->data['serial'],
+                'token' => $this->data['token'],
+                'units' => $this->data['units'],
+                'device_id' => $this->data['device_id'],
+                'transaction_reference' => $this->data['transaction_reference']
+            ],
         );
     }
 

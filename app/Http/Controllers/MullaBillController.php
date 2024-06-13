@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\BaseUrls;
 use App\Enums\Cashbacks;
 use App\Jobs\DiscordBots;
+use App\Jobs\Jobs;
 use App\Models\MullaUserAirtimeNumbers;
 use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserMeterNumbers;
@@ -452,6 +453,22 @@ class MullaBillController extends Controller
                     'status' => true,
                 ]
             );
+
+            Jobs::dispatch([
+                'type' => 'transaction_successful',
+                'email' => Auth::user()->email,
+                'firstname' => Auth::user()->firstname,
+                'utility' => $txn->product_name,
+                'amount' => $txn->amount,
+                'date' => $txn->date ?? now()->format('D dS M \a\t h:i A'),
+                'cashback' => $txn->cashback,
+                'code' => $txn->voucher_code ?? '',
+                'serial' => '',
+                'units'  => $txn->bill_units ?? '',
+                'device_id' => $txn->bill_device_id ?? '',
+                'token' => $txn->bill_token ?? '',
+                'transaction_reference' => $txn->payment_reference
+            ]);
 
             return response()->json($txn, 200);
         } else {
