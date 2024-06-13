@@ -417,6 +417,12 @@ class MullaBillController extends Controller
 
         DiscordBots::dispatch(['message' => json_encode($res)]);
 
+        if (isset($res->code) && !in_array($res->code, ['000', '099'])) {
+            MullaUserWallets::where('user_id', Auth::id())->increment('balance', $request->amount);
+            DiscordBots::dispatch(['message' => 'An error occured, user has been refunded (ID:' . Auth::id() . ') - ' . $request->serviceID . ' ' . json_encode($res)]);
+            return response(['message' => 'An error occured, we have refunded the amount to your wallet.'], 400);
+        }
+
         if (isset($res->response_description) && $res->response_description === 'TRANSACTION SUCCESSFUL') {
             MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
                 ->increment('balance', $request->amount * $this->cashBack($request->serviceID));
