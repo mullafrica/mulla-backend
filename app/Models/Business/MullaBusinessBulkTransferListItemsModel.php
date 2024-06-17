@@ -10,7 +10,7 @@ class MullaBusinessBulkTransferListItemsModel extends Model
     use HasFactory;
 
     protected $fillable = [
-        'id', 'list_id', 'amount', 'email', 'account_name', 'account_number', 'bank_name', 'recipient_code'
+        'id', 'list_id', 'amount', 'email', 'account_name', 'account_number', 'bank_code', 'bank_name', 'recipient_code'
     ];
 
     public function setAmountAttribute($value) {

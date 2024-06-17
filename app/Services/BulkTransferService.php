@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
 class BulkTransferService implements IBulkTransferService
 {
     public function createList(array $data, string $name)
-    {
+    {        
         // Convert keys to slugs
         foreach ($data as &$item) {
             // Rename "Account Name" to "name"
@@ -48,8 +48,6 @@ class BulkTransferService implements IBulkTransferService
             'batch' => $data,
         ]);
 
-        // return $pt_customer->object();
-
         $response = $pt_customer->json();
 
         if (isset($response['data']['errors']) && !empty($response['data']['errors'])) {
@@ -66,16 +64,15 @@ class BulkTransferService implements IBulkTransferService
         // Loop through the success array and create items
         foreach ($response['data']['success'] as $item) {
             MullaBusinessBulkTransferListItemsModel::updateOrCreate([
-                'business_id' => Auth::user()->id,
                 'list_id' => $btl->id,
+                'account_number' => $item['details']['account_number'] ?? 'n/a',
                 'email' => $item['metadata']['email'] ?? 'n/a',
             ], [
                 'amount' => $item['metadata']['amount'] ?? 0, // Ensure you have the correct field or assign a default value
                 'account_name' => $item['name'] ?? 'n/a',
-                'account_number' => $item['details']['account_number'] ?? 'n/a',
-                'bank_code' => $item['details']['bank_code'] ?? 'n/a',
                 'bank_name' => $item['details']['bank_name'] ?? 'n/a',
-                'recipient_code' => $item['recipient_code']
+                'recipient_code' => $item['recipient_code'],
+                'bank_code' => $item['details']['bank_code'] ?? 'n/a',
             ]);
         }
 
