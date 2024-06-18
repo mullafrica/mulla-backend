@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\DiscordBots;
 use App\Jobs\Jobs;
 use App\Jobs\WebhookJobs;
 use Illuminate\Http\Request;
@@ -27,16 +28,10 @@ class Webhooks extends Controller
 
     public function all(Request $request)
     {
-        $data = $request->all();
-        WebhookJobs::dispatch($data);
-        return;
-
         if ($request->ip() === '52.31.139.75' || $request->ip() === '52.49.173.169' || $request->ip() === '52.214.14.220') {
             $data = $request->all();
             WebhookJobs::dispatch($data);
             return response('OK', 200);
         }
-
-        return;
     }
 }
