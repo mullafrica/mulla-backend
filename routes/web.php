@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Webhooks;
 use App\Mail\MullaPasswordResetEmail;
 use App\Mail\MullaResetTokenEmail;
 use App\Mail\MullaWelcomeEmail;

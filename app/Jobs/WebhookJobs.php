@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Models\Business\MullaBusinessBulkTransferListItemsModel;
+use App\Models\Business\MullaBusinessBulkTransferTransactionsAlpha;
 use App\Models\CustomerVirtualAccountsModel;
 use App\Models\MullaUserTransactions;
 use App\Models\MullaUserWallets;
@@ -63,6 +65,33 @@ class WebhookJobs implements ShouldQueue
                 ]);
 
                 $this->sendToDiscord('New transfer to customer wallet has been made. (ID:' . $cvam->user_id . ') ' . 'Amount: ' . $amount / 100 . ' NGN,' . ' ' . User::find($cvam->user_id)->email);
+            }
+        }
+
+        /**
+         * 
+         * Handle Bulk Transfer Data
+         * 
+         */
+        if ($this->data['event'] === 'transfer.success' && $this->data['data']['status'] === 'success') {
+            sleep(2);
+            
+            $this->sendToDiscord('transfer.success');
+
+            MullaBusinessBulkTransferTransactionsAlpha::where('reference', $this->data['data']['reference'])->update([
+                'transfer_code' => $this->data['data']['transfer_code'],
+                'status' => $this->data['data']['status'] === 'success' ? true : false,
+                'currency' => $this->data['data']['currency'],
+            ]);
+
+            $item = MullaBusinessBulkTransferListItemsModel::where('recipient_code', $this->data['data']['recipient']['recipient_code'])->first();
+
+            if ($item) {
+                $item->update([
+                    'account_name' => $this->data['data']['details']['account_name'] ?? $item->account_name,
+                    'bank_code' => $this->data['data']['details']['bank_code'] ?? $item->bank_code,
+                    'bank_name' => $this->data['data']['details']['bank_name'] ?? $item->bank_name
+                ]);
             }
         }
     }

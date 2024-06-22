@@ -4,17 +4,21 @@ namespace App\Services;
 
 use App\Enums\BaseUrls;
 use App\Jobs\MullaBusinessJobs;
+use App\Models\Business\MullaBusinessBulkTransferAlpha;
 use App\Models\Business\MullaBusinessBulkTransferListItemsModel;
 use App\Models\Business\MullaBusinessBulkTransferListModel;
+use App\Models\Business\MullaBusinessBulkTransferTransactionsAlpha;
 use App\Services\Interfaces\IBulkTransferService;
 use App\Traits\Reusables;
+use App\Traits\UniqueId;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class BulkTransferService implements IBulkTransferService
 {
+    use UniqueId, Reusables;
+
     public function createList(array $data, string $name)
     {        
         // Convert keys to slugs
@@ -107,5 +111,56 @@ class BulkTransferService implements IBulkTransferService
         $list->delete();
 
         return response(['status' => true, 'message' => 'List deleted successfully'], 200);
+    }
+
+    /**
+     * 
+     * Initiate transfer to recipient
+     * 
+     */
+    public function initiateTransfer(string $id) {
+        $list = MullaBusinessBulkTransferListModel::find($id);
+
+        $trf = MullaBusinessBulkTransferAlpha::create([
+            'business_id' => Auth::user()->id,
+            'list_id' => $id,
+        ]);
+
+        foreach ($list->items as $item) {
+            MullaBusinessBulkTransferTransactionsAlpha::create([
+                'transfer_id' => $trf->id,
+                'recipient_code' => $item->recipient_code,
+                'amount' => $item->amount * 100,
+                'reference' => $this->uuid16()
+            ]);
+        }
+
+        $transfers = $trf->transactions->map(function ($item) use ($list) {
+            return [
+                "amount" => $item->amount,
+                "reference" => $item->reference,
+                "reason" => $list->title,
+                "recipient" => $item->recipient_code,
+            ];
+        })->toArray();
+
+        $data = [
+            "currency" => "NGN",
+            "source" => "balance",
+            "transfers" => $transfers,
+        ];
+
+        $pt_customer = Http::withToken(env('MULLA_PAYSTACK_LIVE'))->post(BaseUrls::PAYSTACK . 'transfer/bulk', $data);
+
+        $response = $pt_customer->json();
+
+        if ($response['status'] === false) {
+            $this->sendToDiscord('Business with (ID- ' . Auth::user()->id . ') initiated transfer failed: ' . $response['message']);
+            return false;
+        }
+
+        $this->sendToDiscord('Business with (ID- ' . Auth::user()->id . ') has initiated a transfer: ' . $response['message']);
+        
+        return true;
     }
 }

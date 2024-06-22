@@ -18,8 +18,9 @@ class MullaBusinessBulkTransferListModel extends Model
         'id', 'business_id', 'title', 'type'
     ];
 
-    public $appends = ['count'];
+    protected $hidden = ['created_at', 'updated_at'];
 
+    public $appends = ['count'];
 
     protected static function boot()
     {

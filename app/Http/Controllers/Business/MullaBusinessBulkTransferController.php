@@ -14,8 +14,11 @@
 namespace App\Http\Controllers\Business;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business\MullaBusinessBulkTransferAlpha;
+use App\Models\Business\MullaBusinessBulkTransferListModel;
 use App\Models\Business\MullaBusinessBulkTransfersModel;
 use App\Models\Business\MullaBusinessBulkTransferTransactions;
+use App\Models\Business\MullaBusinessBulkTransferTransactionsAlpha;
 use App\Services\BulkTransferService;
 use App\Traits\Reusables;
 use App\Traits\UniqueId;
@@ -169,5 +172,35 @@ class MullaBusinessBulkTransferController extends Controller
     public function deleteBulkTransferList($id, BulkTransferService $bts)
     {
         return $bts->deleteList($id);
+    }
+
+    public function initiateBulkTransferAlpha($listId, BulkTransferService $bts) {
+        $list = MullaBusinessBulkTransferListModel::find($listId);
+
+        if (!$list) {
+            return response()->json(['message' => 'List not found'], 404);
+        }
+
+        $status = $bts->initiateTransfer($listId);
+
+        if ($status) {
+            return response()->json(['message' => 'Transfer initiated successfully.'], 200);
+        } else {
+            return response()->json(['message' => 'Transfer failed, check data and try again.'], 500);
+        }
+    }
+
+    public function getBulkTransferAlpha() {
+        return MullaBusinessBulkTransferAlpha::where('business_id', Auth::id())->get();
+    }
+
+    public function getBulkTransferTransactions($id) {
+        $txns = MullaBusinessBulkTransferTransactionsAlpha::where('transfer_id', $id)->get();
+
+        if (!$txns) {
+            return response()->json(['message' => 'Transfers not found.'], 404);
+        }
+
+        return $txns;
     }
 }
