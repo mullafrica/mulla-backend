@@ -108,7 +108,7 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@mulla.africa'),
+        'address' => env('MAIL_FROM_ADDRESS', 'noreply@mullaafrica.com'),
         'name' => env('MAIL_FROM_NAME', 'Mulla Africa'),
     ],
 
