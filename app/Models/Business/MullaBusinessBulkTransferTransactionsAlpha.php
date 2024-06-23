@@ -15,28 +15,28 @@ class MullaBusinessBulkTransferTransactionsAlpha extends Model
 
     protected $hidden = ['updated_at'];
 
-    protected $appends = ['account'];
+    protected $appends = ['account', 'formatted_amount'];
 
     public function getAccountAttribute()
     {
         return MullaBusinessBulkTransferListItemsModel::where('recipient_code', $this->attributes['recipient_code'])->first([
             'account_name',
-            'bank_name'
+            'bank_name',
+            'account_number'
         ]);
     }
 
-
-    public function getAmountAttribute($value) {
-        return number_format($value / BaseUrls::MULTIPLIER);
+    public function getFormattedAmountAttribute() {
+        return number_format($this->attributes['amount'] / BaseUrls::MULTIPLIER);
     }
 
     public function getCreatedAtAttribute($value)
     {
-        return Carbon::parse($value)->format('D dS M \a\t h:i A');
+       return Carbon::parse($value)->format('M d, Y');
     }
 
     public function getUpdatedAtAttribute($value)
     {
-        return Carbon::parse($value)->format('D dS M \a\t h:i A');
+        return Carbon::parse($value)->format('M d, Y');
     }
 }

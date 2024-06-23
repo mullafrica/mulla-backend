@@ -20,7 +20,7 @@ class MullaBusinessBulkTransferAlpha extends Model
         'updated_at',
     ];
 
-    protected $appends = ['count'];
+    protected $appends = ['count', 'status'];
     
     // boot() method to generate unique id for each record
     protected static function boot()
@@ -35,7 +35,7 @@ class MullaBusinessBulkTransferAlpha extends Model
 
     public function getCreatedAtAttribute($value)
     {
-        return Carbon::parse($value)->format('D dS M \a\t h:i A');
+        return Carbon::parse($value)->format('M d, Y');
     }
 
     public function transactions() {
@@ -45,5 +45,10 @@ class MullaBusinessBulkTransferAlpha extends Model
     public function getCountAttribute()
     {
         return $this->transactions()->count();
+    }
+
+    public function getStatusAttribute()
+    {
+        return $this->transactions()->where('status', false)->doesntExist();
     }
 }

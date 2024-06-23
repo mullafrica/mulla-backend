@@ -85,12 +85,12 @@ class BulkTransferService implements IBulkTransferService
 
     public function getLists()
     {
-        return MullaBusinessBulkTransferListModel::where('business_id', Auth::user()->id)->get();
+        return MullaBusinessBulkTransferListModel::where('business_id', Auth::user()->id)->orderBy('created_at', 'desc')->get();
     }
 
     public function getListItems(string $id)
     {
-        return MullaBusinessBulkTransferListItemsModel::where('list_id', $id)->get();
+        return MullaBusinessBulkTransferListItemsModel::where('list_id', $id)->orderBy('created_at', 'desc')->get();
     }
 
     public function deleteList(string $id)

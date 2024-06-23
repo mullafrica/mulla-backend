@@ -191,11 +191,11 @@ class MullaBusinessBulkTransferController extends Controller
     }
 
     public function getBulkTransferAlpha() {
-        return MullaBusinessBulkTransferAlpha::where('business_id', Auth::id())->get();
+        return MullaBusinessBulkTransferAlpha::where('business_id', Auth::id())->orderBy('created_at', 'desc')->get();
     }
 
     public function getBulkTransferTransactions($id) {
-        $txns = MullaBusinessBulkTransferTransactionsAlpha::where('transfer_id', $id)->get();
+        $txns = MullaBusinessBulkTransferTransactionsAlpha::where('transfer_id', $id)->orderBy('created_at', 'desc')->get();
 
         if (!$txns) {
             return response()->json(['message' => 'Transfers not found.'], 404);
