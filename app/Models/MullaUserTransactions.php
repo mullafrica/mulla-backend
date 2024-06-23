@@ -18,7 +18,7 @@ class MullaUserTransactions extends Model
 
     public function getDateAttribute()
     {
-        // Make the date like Monday, 12 Jun 2023
+        // Make the date like Monday 12 Jun 2023 at 12:00 AM
         return $this->created_at->format('D dS M \a\t h:i A');
     }
 
