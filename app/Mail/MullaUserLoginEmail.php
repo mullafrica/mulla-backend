@@ -50,7 +50,7 @@ class MullaUserLoginEmail extends Mailable
                 'browser' => $this->data['browser'],
                 'os' => $this->data['platform'],
                 'location' => $info['location']['city'] . ', ' . $info['location']['country'],
-            ], 
+            ],
         );
     }
 
