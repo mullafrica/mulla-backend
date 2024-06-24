@@ -108,6 +108,8 @@ jobs:
           script: |
             tar xzf ${{ matrix.server.path }}/artifacts/${GITHUB_SHA}.tar.gz -C "${{ matrix.server.path }}/html"
 
+            chmod -R 777 "${{ matrix.server.path }}/html/storage"
+
             printf "%s" "$LARAVEL_ENV" > "${{ matrix.server.path }}/html/.env"
             cd ${{ matrix.server.path }}/html && php artisan migrate && php artisan storage:link && php artisan view:clear && php artisan cache:clear && php artisan config:clear
 
