@@ -339,6 +339,10 @@ class MullaBillController extends Controller
             'fromWallet' => 'required'
         ]);
 
+        /**
+         * The payment reference should be unique this helps us to avoid duplicate payments or hacked payments
+         * with old payment reference ids
+         */
         if (!MullaUserTransactions::where('payment_reference', $request->payment_reference)->where('status', false)->exists()) {
             return response(['message' => 'Payment ref error.'], 400);
         }

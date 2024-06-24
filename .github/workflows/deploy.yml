@@ -34,7 +34,7 @@ jobs:
 
       # install composer dependencies
       - name: Install Composer Dependencies
-        run: composer update --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist
 
       # create archive of the entire app
       - name: Create Deployment Artifact
@@ -110,8 +110,6 @@ jobs:
 
             rm -rf ${{ matrix.server.path }}/html/storage
             ln -s -f ${{ matrix.server.path }}/storage ${{ matrix.server.path }}/html
-
-            chmod -R 777 ${{ matrix.server.path }}/html/bootstrap
 
             printf "%s" "$LARAVEL_ENV" > "${{ matrix.server.path }}/html/.env"
             cd ${{ matrix.server.path }}/html && php artisan migrate && php artisan storage:link && php artisan view:clear && php artisan cache:clear && php artisan config:clear
