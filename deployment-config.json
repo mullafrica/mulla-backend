@@ -3,14 +3,14 @@
         "name": "server-staging",
         "beforeHooks": "",
         "afterHooks": "",
-        "path": "/var/www/api.mulla.africa",
+        "path": "/var/www/api.mullaafrica.com",
         "branch": "staging"
     },
     {
         "name": "server-main",
         "beforeHooks": "",
         "afterHooks": "",
-        "path": "/var/www/api.mulla.africa",
+        "path": "/var/www/api.mullaafrica.com",
         "branch": "main"
     }
 ]
