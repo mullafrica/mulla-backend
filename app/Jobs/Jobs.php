@@ -70,33 +70,6 @@ class Jobs implements ShouldQueue
                 ]);
             }
 
-            // // 2 -> Create Wallet
-            // MullaUserWallets::updateOrCreate([
-            //     'user_id' => $this->data['user_id'],
-            // ]);
-
-            // // 3 -> Create Cashback Wallet
-            // MullaUserCashbackWallets::updateOrCreate([
-            //     'user_id' => $this->data['user_id'],
-            // ]);
-
-            // // 4 -> Create Paystack Customer
-            // $pt = $va->createCustomer([
-            //     'user_id' => $this->data['user_id'],
-            //     'email' => $this->data['email'],
-            //     'firstname' => $this->data['firstname'],
-            //     'lastname' => $this->data['lastname'],
-            //     'phone' => $this->data['phone'],
-            // ]);
-
-            // // 5 -> Create DVA
-            // $va->createVirtualAccount($pt, [
-            //     'user_id' => $this->data['user_id'],
-            //     'firstname' => $this->data['firstname'],
-            //     'lastname' => $this->data['lastname'],
-            //     'phone' => $this->data['phone'],
-            // ]);
-
             // 7 -> Send Email
             $email = new MullaWelcomeEmail($this->data);
             Mail::to($this->data['email'])->send($email);

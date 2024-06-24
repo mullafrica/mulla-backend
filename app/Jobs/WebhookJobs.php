@@ -70,10 +70,11 @@ class WebhookJobs implements ShouldQueue
 
         /**
          * 
-         * Handle Bulk Transfer Data
+         * Handle Bulk Transfer Data for Mulla Business
          * 
          */
         if ($this->data['event'] === 'transfer.success' && $this->data['data']['status'] === 'success') {
+            
             sleep(2);
             
             $this->sendToDiscord('transfer.success');
