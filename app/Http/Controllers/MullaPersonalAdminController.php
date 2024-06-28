@@ -18,7 +18,7 @@ class MullaPersonalAdminController extends Controller
             return response('Unauthorized', 401);
         }
 
-        return response(User::all(), 200);
+        return response(User::orderBy('created_at', 'desc')->get(), 200);
     }
 
     public function getAllTransactions(Request $request)
@@ -27,7 +27,7 @@ class MullaPersonalAdminController extends Controller
             return response('Unauthorized', 401);
         }
 
-        return response(MullaUserTransactions::all(), 200);
+        return response(MullaUserTransactions::orderBy('created_at', 'desc')->get(), 200);
     }
 
     public function getAllStats(Request $request)
