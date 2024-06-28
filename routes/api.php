@@ -4,6 +4,7 @@ use App\Http\Controllers\Business\MullaBusinessAuthController;
 use App\Http\Controllers\Business\MullaBusinessBulkTransferController;
 use App\Http\Controllers\MullaAuthController;
 use App\Http\Controllers\MullaBillController;
+use App\Http\Controllers\MullaPersonalAdminController;
 use App\Http\Controllers\MullaTransactionsController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\Webhooks;
@@ -42,6 +43,10 @@ Route::post('/business/auth/login', [MullaBusinessAuthController::class, 'login'
 Route::get('/m/banks', function () {
     return MullaBusinessBulkTransferController::getBanks();
 });
+
+Route::get('/admin/users', [MullaPersonalAdminController::class, 'getAllUsers']);
+Route::get('/admin/stats', [MullaPersonalAdminController::class, 'getAllStats']);
+Route::get('/admin/transactions', [MullaPersonalAdminController::class, 'getAllTransactions']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/comet/logout', [MullaAuthController::class, 'logout']);
