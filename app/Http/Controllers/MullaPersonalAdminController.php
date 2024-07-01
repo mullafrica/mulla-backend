@@ -27,7 +27,7 @@ class MullaPersonalAdminController extends Controller
             return response('Unauthorized', 401);
         }
 
-        return response(MullaUserTransactions::orderBy('created_at', 'desc')->get(), 200);
+        return response(MullaUserTransactions::orderBy('created_at', 'desc')->where('status', 1)->get(), 200);
     }
 
     public function getAllStats(Request $request)
@@ -38,7 +38,7 @@ class MullaPersonalAdminController extends Controller
 
         return response([
             'txns' => [
-                'amount' => number_format(MullaUserTransactions::sum('amount'), 2),
+                'amount' => number_format(MullaUserTransactions::where('status', 1)->sum('amount'), 2),
                 'count' => MullaUserTransactions::count(),
                 'monthly_percent_change' => $this->getTransactionPercentChange(),
             ],
