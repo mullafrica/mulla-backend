@@ -462,6 +462,7 @@ class MullaBillController extends Controller
                 'type' => 'transaction_successful',
                 'email' => Auth::user()->email,
                 'firstname' => Auth::user()->firstname,
+                'transfer' => '',
                 'utility' => $txn->product_name,
                 'amount' => $txn->amount,
                 'date' => $txn->date ?? now()->format('D dS M \a\t h:i A'),

@@ -90,4 +90,8 @@ class User extends Authenticatable
     // {
     //     return $this->hasOne(UserCashbackWallets::class, 'user_id', 'id');
     // }
+
+    public function beneficiaries() {
+        return $this->hasMany(MullaUserTransferBeneficiariesModel::class, 'user_id', 'id');
+    }
 }

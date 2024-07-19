@@ -43,6 +43,7 @@ class MullaUserTransactionEmail extends Mailable
             with: [
                 'firstname' => $this->data['firstname'],
                 'utility' => $this->data['utility'],
+                'transfer' => $this->data['transfer'],
                 'amount' => $this->data['amount'],
                 'date' => $this->data['date'],
                 'cashback' => $this->data['cashback'],

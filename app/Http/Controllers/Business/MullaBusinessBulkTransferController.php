@@ -123,7 +123,7 @@ class MullaBusinessBulkTransferController extends Controller
 
     public static function getBanks()
     {
-        return Cache::remember('pt_banks', 60 * 24 * 7, function () {
+        return Cache::remember('pt_banks', 60 * 24 * 30, function () {
             $data = Http::withToken(env('MULLA_PAYSTACK_LIVE'))->get('https://api.paystack.co/bank');
             $banks = $data->object()->data;
 

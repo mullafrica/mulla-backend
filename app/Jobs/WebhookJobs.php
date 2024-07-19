@@ -74,6 +74,7 @@ class WebhookJobs implements ShouldQueue
          * 
          */
         if ($this->data['event'] === 'transfer.success' && $this->data['data']['status'] === 'success') {
+            // Mulla Business
             MullaBusinessBulkTransferTransactionsAlpha::where('reference', $this->data['data']['reference'])->update([
                 'transfer_code' => $this->data['data']['transfer_code'],
                 'status' => $this->data['data']['status'] === 'success' ? true : false,
@@ -88,9 +89,11 @@ class WebhookJobs implements ShouldQueue
                     'bank_code' => $this->data['data']['details']['bank_code'] ?? $item->bank_code,
                     'bank_name' => $this->data['data']['details']['bank_name'] ?? $item->bank_name
                 ]);
-            }
+            }            
 
-            DiscordBots::dispatch(['message' => 'transfer.success', 'data' => json_encode($this->data['data'])]);
+            // Mulla User (What to do here?)
+            
+            DiscordBots::dispatch(['message' => 'Mulla TRF/SUCCESS - ' . json_encode($this->data['data'])]);
         }
     }
 }

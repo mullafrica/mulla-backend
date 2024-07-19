@@ -6,6 +6,7 @@ use App\Http\Controllers\MullaAuthController;
 use App\Http\Controllers\MullaBillController;
 use App\Http\Controllers\MullaPersonalAdminController;
 use App\Http\Controllers\MullaTransactionsController;
+use App\Http\Controllers\MullaTransferController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\Webhooks;
 use Illuminate\Http\Request;
@@ -80,10 +81,17 @@ Route::middleware('auth:sanctum')->group(function () {
     // Wallet
     Route::get('/comet/wallet/dva', [WalletController::class, 'getVirtualAccount']);
     Route::post('/comet/wallet/pay', [WalletController::class, 'payWithWallet']);
+
+    // Transfer
+    Route::get('/comet/transfer/banks', [MullaTransferController::class, 'getBanks']);
+    Route::get('/comet/transfer/beneficiaries', [MullaTransferController::class, 'getBeneficiaries']);
+    Route::post('/comet/transfer/beneficiaries', [MullaTransferController::class, 'saveBeneficiaries']);
+    Route::post('/comet/transfer/beneficiary/validate', [MullaTransferController::class, 'validateAccount']);
+    Route::post('/comet/transfer', [MullaTransferController::class, 'completeTransfer']);
 });
 
 
-Route::middleware('auth:business')->group( function () {
+Route::middleware('auth:business')->group(function () {
     Route::post('/business/bulktransfer', [MullaBusinessBulkTransferController::class, 'createBulkTransfer']);
     Route::get('/business/bulktransfer', [MullaBusinessBulkTransferController::class, 'getBulkTransfers']);
 
@@ -101,5 +109,4 @@ Route::middleware('auth:business')->group( function () {
     Route::get('/business/bulk-transfer/list', [MullaBusinessBulkTransferController::class, 'getBulkTransferLists']);
     Route::get('/business/bulk-transfer/list/{id}', [MullaBusinessBulkTransferController::class, 'getBulkTransferListItems']);
     Route::delete('/business/bulk-transfer/list/{id}', [MullaBusinessBulkTransferController::class, 'deleteBulkTransferList']);
-
 });
