@@ -117,7 +117,7 @@ class MullaTransferController extends Controller
                 ], 400);
             }
 
-            if ($transfer->object()->status === true && $transfer->object()->data->status === 'success') {
+            if ($transfer->object()->status === true && $transfer->object()->data->status === 'pending') {
                 // Decrement wallet balance
                 $ws->decrementBalance($request->amount);
 
