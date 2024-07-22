@@ -55,24 +55,37 @@ class Jobs implements ShouldQueue
          */
         if ($this->data['type'] === 'create_account') {
             // 1 -> Add to Brevo
-            if (env('APP_ENV') === 'production') {
-                Http::withHeaders([
-                    'accept' => 'application/json',
-                    'api-key' => env('BREVO_KEY'),
-                    'content-type' => 'application/json'
-                ])->post('https://api.brevo.com/v3/contacts', [
-                    "attributes" => [
-                        "firstname" =>  $this->data['firstname'],
-                        "lastname" => $this->data['lastname'],
-                    ],
-                    "email" => $this->data['email'],
-                    "updateEnabled" => false
-                ]);
-            }
+            
+            // if (env('APP_ENV') === 'production') {
+            //     Http::withHeaders([
+            //         'accept' => 'application/json',
+            //         'api-key' => env('BREVO_KEY'),
+            //         'content-type' => 'application/json'
+            //     ])->post('https://api.brevo.com/v3/contacts', [
+            //         "attributes" => [
+            //             "firstname" =>  $this->data['firstname'],
+            //             "lastname" => $this->data['lastname'],
+            //         ],
+            //         "email" => $this->data['email'],
+            //         "updateEnabled" => false
+            //     ]);
+            // }
 
             // 7 -> Send Email
             $email = new MullaWelcomeEmail($this->data);
             Mail::to($this->data['email'])->send($email);
+
+            // -> Add user to convertkit
+            Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'charset' => 'utf-8'
+            ])
+            ->post('https://api.convertkit.com/v3/forms/6862352/subscribe', [
+                'api_key' => 'E1zguteKG8p0k5i-XuI4kg',
+                'email' => $this->data['email'],
+                'first_name' => $this->data['firstname'],
+                'phone' => $this->data['phone']
+            ]);
         }
 
         if ($this->data['type'] == 2) {
