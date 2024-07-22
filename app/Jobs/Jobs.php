@@ -55,7 +55,7 @@ class Jobs implements ShouldQueue
          */
         if ($this->data['type'] === 'create_account') {
             // 1 -> Add to Brevo
-            
+
             // if (env('APP_ENV') === 'production') {
             //     Http::withHeaders([
             //         'accept' => 'application/json',
@@ -75,17 +75,19 @@ class Jobs implements ShouldQueue
             $email = new MullaWelcomeEmail($this->data);
             Mail::to($this->data['email'])->send($email);
 
-            // -> Add user to convertkit
-            Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'charset' => 'utf-8'
-            ])
-            ->post('https://api.convertkit.com/v3/forms/6862352/subscribe', [
-                'api_key' => 'E1zguteKG8p0k5i-XuI4kg',
-                'email' => $this->data['email'],
-                'first_name' => $this->data['firstname'],
-                'phone' => $this->data['phone']
-            ]);
+            // 8 -> Add user to convertkit
+            if (env('APP_ENV') === 'production') {
+                Http::withHeaders([
+                    'Content-Type' => 'application/json',
+                    'charset' => 'utf-8'
+                ])
+                    ->post('https://api.convertkit.com/v3/forms/6862352/subscribe', [
+                        'api_key' => env('CONVERTKIT_KEY'),
+                        'email' => $this->data['email'],
+                        'first_name' => $this->data['firstname'],
+                        'phone' => $this->data['phone']
+                    ]);
+            }
         }
 
         if ($this->data['type'] == 2) {
