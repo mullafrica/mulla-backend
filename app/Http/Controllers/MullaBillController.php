@@ -271,15 +271,15 @@ class MullaBillController extends Controller
                     'meter_number' => $request->device_number,
                 ], [
                     'user_id' => Auth::id(),
-                    'name' => $device->content->Customer_Name,
-                    'meter_type' => $device->content->Meter_Type,
-                    'address' => $device->content->Address
+                    'name' => $device->content->Customer_Name ?? '',
+                    'meter_type' => $device->content->Meter_Type ?? '',
+                    'address' => $device->content->Address ?? ''
                 ]);
 
                 return response()->json([
                     'data' => [
-                        "address" => $device->content->Address,
-                        "name" => $device->content->Customer_Name
+                        "address" => $device->content->Address ?? '',
+                        "name" => $device->content->Customer_Name ?? ''
                     ]
                 ], 200);
             } else {
