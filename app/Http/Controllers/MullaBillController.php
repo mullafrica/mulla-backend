@@ -272,7 +272,7 @@ class MullaBillController extends Controller
                 ], [
                     'user_id' => Auth::id(),
                     'name' => $device->content->Customer_Name ?? '',
-                    'meter_type' => $device->content->Meter_Type ?? '',
+                    'meter_type' => $device->content->Meter_Type ?? $request->meter_type,
                     'address' => $device->content->Address ?? ''
                 ]);
 
