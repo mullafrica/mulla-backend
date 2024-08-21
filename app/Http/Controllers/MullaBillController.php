@@ -262,12 +262,12 @@ class MullaBillController extends Controller
 
             $data = $validate->object();
 
-            if (!isset($data->content->error)) {
+            if (!isset($data->content->error) && $validate->status() === 200) {
                 // Fetch and store data
                 $device = $validate->object();
 
                 // Store meter for user
-                MullaUserMeterNumbers::updateOrCreate([
+                MullaUserMeterNumbers::firstOrCreate([
                     'meter_number' => $request->device_number,
                 ], [
                     'user_id' => Auth::id(),
