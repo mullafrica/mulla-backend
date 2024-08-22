@@ -75,6 +75,7 @@ class MullaBillController extends Controller
                 // Store meter for user
                 MullaUserMeterNumbers::updateOrCreate([
                     'meter_number' => $request->device_number,
+                    'user_id' => Auth::id(),
                 ], [
                     'user_id' => Auth::id(),
                     'name' => $device->data->name,
@@ -269,8 +270,8 @@ class MullaBillController extends Controller
                 // Store meter for user
                 MullaUserMeterNumbers::firstOrCreate([
                     'meter_number' => $request->device_number,
-                ], [
                     'user_id' => Auth::id(),
+                ], [
                     'name' => $device->content->Customer_Name ?? '',
                     'meter_type' => $device->content->Meter_Type ?? $request->meter_type,
                     'address' => $device->content->Address ?? ''
@@ -379,8 +380,9 @@ class MullaBillController extends Controller
         if ($request->serviceID === 'showmax') {
             MullaUserMeterNumbers::updateOrCreate([
                 'meter_number' => $request->billersCode,
-            ], [
                 'user_id' => Auth::id(),
+            ], [
+                
             ]);
         }
 
