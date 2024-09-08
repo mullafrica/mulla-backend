@@ -113,7 +113,7 @@ jobs:
             printf "%s" "$LARAVEL_ENV" > "${{ matrix.server.path }}/html/.env"
             cd ${{ matrix.server.path }}/html && php artisan migrate && php artisan storage:link && php artisan view:clear && php artisan cache:clear && php artisan config:clear
 
-            service php8.1-fpm reload
+            service php8.3-fpm reload
 
   # clean up artifacts, keep it at 5 artifacts always
   clean-up:
