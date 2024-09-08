@@ -96,7 +96,7 @@ jobs:
         uses: appleboy/ssh-action@master
         env:
           GITHUB_SHA: ${{ github.sha }}
-          LARAVEL_ENV: ${{ secrets.LARAVEL_ENV }}
+          LARAVEL_ENV: ${{ (github.ref == 'refs/heads/main') && secrets.LARAVEL_ENV || secrets.ENV_STAGING }}
         with:
           host: ${{ (github.ref == 'refs/heads/main') && secrets.HOST || secrets.HOST_STAGING }}
           username: ${{ secrets.USERNAME }}
