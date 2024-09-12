@@ -24,10 +24,13 @@ class Webhooks extends Controller
 
     public function all(Request $request)
     {
-        if ($request->ip() === '52.31.139.75' || $request->ip() === '52.49.173.169' || $request->ip() === '52.214.14.220') {
-            $data = $request->all();
-            WebhookJobs::dispatch($data);
-            return response('OK', 200);
-        }
+        // return $request->header('X-Forwarded-For');
+
+        $data = $request->all();
+        WebhookJobs::dispatch($data);
+        return response('OK', 200);
+
+        // if ($request->ip() === '52.31.139.75' || $request->ip() === '52.49.173.169' || $request->ip() === '52.214.14.220') {
+        // }
     }
 }
