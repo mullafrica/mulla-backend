@@ -47,7 +47,7 @@ jobs:
       # store artifact for distribution
       - name: Store Artifact for Distribution
         # github action to upload build artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: app-build
           path: ${{ github.sha }}.tar.gz
@@ -73,7 +73,7 @@ jobs:
         server: ${{ fromJson(needs.create-deployment-artifacts.outputs.deployment-matrix) }}
       #steps for this job
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: app-build
       # use repository secrets and SSH keys when in production
