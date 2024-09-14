@@ -31,13 +31,13 @@ class MullaUserTransactions extends Model
     private function updateUserStatsCache($userId)
     {
         Cache::put('user_stats_cache' . $userId, [
-            'total_amount_spent' => self::where('user_id', $userId)->where('status', 1)->whereNot('type', 'Bank Transfer')->sum('amount'),
+            'total_amount_spent' => number_format(self::where('user_id', $userId)->where('status', 1)->whereNot('type', 'Bank Transfer')->sum('amount'), 2),
             'total_transaction_count' => self::where('user_id', $userId)->where('status', 1)->count(),
             'spend_by_type' => [
-                'electricity' => self::where('user_id', $userId)->where('status', 1)->where('type', 'Electricity Bill')->sum('amount'),
-                'airtime' => self::where('user_id', $userId)->where('status', 1)->where('type', 'Airtime Recharge')->sum('amount'),
-                'tv' => self::where('user_id', $userId)->where('status', 1)->where('type', 'TV Subscription')->sum('amount'),
-                'internet_data' => self::where('user_id', $userId)->where('status', 1)->where('type', 'Data Services')->sum('amount'),
+                'electricity' => number_format(self::where('user_id', $userId)->where('status', 1)->where('type', 'Electricity Bill')->sum('amount'), 2),
+                'airtime' => number_format(self::where('user_id', $userId)->where('status', 1)->where('type', 'Airtime Recharge')->sum('amount'), 2),
+                'tv' => number_format(self::where('user_id', $userId)->where('status', 1)->where('type', 'TV Subscription')->sum('amount'), 2),
+                'internet_data' => number_format(self::where('user_id', $userId)->where('status', 1)->where('type', 'Data Services')->sum('amount'), 2),
             ]
         ], 60 * 24 * 24);
     }
