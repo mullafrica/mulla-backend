@@ -31,6 +31,8 @@ class MullaUserTransactions extends Model
     private function updateUserStatsCache($userId)
     {
         Cache::put('user_stats_cache' . $userId, [
+            'created_at' => Carbon::parse(User::where('id', $userId)->first()->created_at)->isoFormat('LL'),
+            'total_cashback' => number_format(User::where('id', $userId)->first()->cashback_wallet, 2),
             'total_amount_spent' => number_format(self::where('user_id', $userId)->where('status', 1)->whereNot('type', 'Bank Transfer')->sum('amount'), 2),
             'total_transaction_count' => self::where('user_id', $userId)->where('status', 1)->count(),
             'spend_by_type' => [

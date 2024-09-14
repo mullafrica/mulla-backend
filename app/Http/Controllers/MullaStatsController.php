@@ -17,6 +17,7 @@ class MullaStatsController extends Controller
         $data = Cache::remember('user_stats_cache' . $user->id, 60 * 24 * 24, function () use ($user) {
             return [
                 'created_at' => Carbon::parse($user->created_at)->isoFormat('LL'),
+                'total_cashback' => number_format($user->cashback_wallet, 2),
                 'total_amount_spent' => number_format(MullaUserTransactions::where('user_id', $user->id)->where('status', 1)->whereNot('type', 'Bank Transfer')->sum('amount'), 2),
                 'total_transaction_count' => MullaUserTransactions::where('user_id', $user->id)->where('status', 1)->count(),
                 'spend_by_type' => [
