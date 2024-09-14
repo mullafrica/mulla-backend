@@ -5,6 +5,7 @@ use App\Http\Controllers\Business\MullaBusinessBulkTransferController;
 use App\Http\Controllers\MullaAuthController;
 use App\Http\Controllers\MullaBillController;
 use App\Http\Controllers\MullaPersonalAdminController;
+use App\Http\Controllers\MullaStatsController;
 use App\Http\Controllers\MullaTransactionsController;
 use App\Http\Controllers\MullaTransferController;
 use App\Http\Controllers\WalletController;
@@ -88,6 +89,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/comet/transfer/beneficiaries', [MullaTransferController::class, 'saveBeneficiaries']);
     Route::post('/comet/transfer/beneficiary/validate', [MullaTransferController::class, 'validateAccount']);
     Route::post('/comet/transfer', [MullaTransferController::class, 'completeTransfer']);
+
+    // Stats
+    Route::get('/comet/account/stats', [MullaStatsController::class, 'getStats']);
+
 });
 
 
