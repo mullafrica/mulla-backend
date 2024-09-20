@@ -268,13 +268,14 @@ class MullaBillController extends Controller
                 $device = $validate->object();
 
                 // Store meter for user
-                MullaUserMeterNumbers::firstOrCreate([
+                MullaUserMeterNumbers::updateOrCreate([
                     'meter_number' => $request->device_number,
                     'user_id' => Auth::id(),
+                    'address' => $device->content->Address
                 ], [
                     'name' => $device->content->Customer_Name ?? '',
                     'meter_type' => $device->content->Meter_Type ?? $request->meter_type,
-                    'address' => $device->content->Address ?? ''
+                    'disco' => $op_id ?? ''
                 ]);
 
                 return response()->json([
@@ -381,9 +382,7 @@ class MullaBillController extends Controller
             MullaUserMeterNumbers::updateOrCreate([
                 'meter_number' => $request->billersCode,
                 'user_id' => Auth::id(),
-            ], [
-                
-            ]);
+            ], []);
         }
 
         $phone = Auth::user()->phone;
