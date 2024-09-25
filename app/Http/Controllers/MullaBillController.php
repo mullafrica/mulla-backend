@@ -14,6 +14,7 @@ use App\Models\MullaUserTvCardNumbers;
 use App\Models\MullaUserWallets;
 use App\Services\WalletService;
 use App\Traits\Reusables;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -23,7 +24,7 @@ class MullaBillController extends Controller
 {
     use Reusables;
 
-    public $vtp_endpoint = "https://api-service.vtpass.com/api/";
+    public $vtp_endpoint = "https://vtpass.com/api/";
 
     // A
     public function getOperators(Request $request)
@@ -473,7 +474,9 @@ class MullaBillController extends Controller
                 'units'  => $txn->bill_units ?? '',
                 'device_id' => $txn->bill_device_id ?? '',
                 'token' => $txn->bill_token ?? '',
-                'transaction_reference' => $txn->payment_reference
+                'txn_type' => $txn->type ?? '',
+                'transaction_reference' => $txn->payment_reference,
+                'created_at' => Carbon::now()->toDateTimeString(),
             ]);
 
             return response()->json($txn, 200);

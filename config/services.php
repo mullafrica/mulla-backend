@@ -31,4 +31,8 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'customerio' => [
+        'site_id'  => env('CUSTOMERIO_SITE_ID'),
+        'api_key'  => env('CUSTOMERIO_API_KEY'),
+    ],
 ];

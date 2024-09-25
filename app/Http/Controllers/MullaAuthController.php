@@ -9,6 +9,7 @@ use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserWallets;
 use App\Models\User;
 use App\Models\VerifyEmailToken;
+use App\Services\CustomerIoService;
 use App\Services\VirtualAccount;
 use App\Traits\Reusables;
 use App\Traits\UniqueId;
@@ -47,6 +48,16 @@ class MullaAuthController extends Controller
                     'browser' =>  $browser,
                     'platform' => $platform,
                 ]);
+
+                // Track this signin event
+                $cio = new CustomerIoService();
+                $cio->trackEvent([
+                    'email' => $user->email,
+                    'name' => 'last_sign_in',
+                    'ip' => request()->ip(),
+                    'browser' =>  $browser,
+                    'platform' => $platform,
+                ], 'last_sign_in');
 
                 return response()->json([
                     'message' => 'Logged in.',
@@ -153,7 +164,8 @@ class MullaAuthController extends Controller
             'firstname' => $request->firstname,
             'lastname' => $request->lastname,
             'phone' => $request->phone,
-            'email' => $request->email ?? 'pikeconcept@gmail.com',
+            'email' => $request->email,
+            'created_at' => Carbon::now()->toDateTimeString(),
         ]);
 
         $this->sendToDiscord($user->firstname . ', ' . $user->email . ' just created an account!');

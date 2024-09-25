@@ -13,6 +13,7 @@ use App\Mail\MullaWelcomeEmail;
 use App\Models\CustomerVirtualAccountsModel;
 use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserWallets;
+use App\Services\CustomerIoService;
 use App\Services\VirtualAccount;
 use App\Traits\Reusables;
 use Illuminate\Bus\Queueable;
@@ -45,7 +46,7 @@ class Jobs implements ShouldQueue
         /**
          * 
          * 
-         * 1 -> Add to Brevo
+         * 1 -> Add to CustomerIo
          * 2 -> Create Wallet [disable]
          * 3 -> Create Cashback Wallet [disable]
          * 4 -> Create Paystack Customer [disable]
@@ -54,23 +55,6 @@ class Jobs implements ShouldQueue
          * 
          */
         if ($this->data['type'] === 'create_account') {
-            // 1 -> Add to Brevo
-
-            // if (env('APP_ENV') === 'production') {
-            //     Http::withHeaders([
-            //         'accept' => 'application/json',
-            //         'api-key' => env('BREVO_KEY'),
-            //         'content-type' => 'application/json'
-            //     ])->post('https://api.brevo.com/v3/contacts', [
-            //         "attributes" => [
-            //             "firstname" =>  $this->data['firstname'],
-            //             "lastname" => $this->data['lastname'],
-            //         ],
-            //         "email" => $this->data['email'],
-            //         "updateEnabled" => false
-            //     ]);
-            // }
-
             // 7 -> Send Email
             $email = new MullaWelcomeEmail($this->data);
             Mail::to($this->data['email'])->send($email);
@@ -88,6 +72,10 @@ class Jobs implements ShouldQueue
                         'phone' => $this->data['phone']
                     ]);
             }
+
+            // 1 -> Add to CustomerIO
+            $customerIO = new CustomerIoService();
+            $customerIO->identifyUser($this->data);
         }
 
         if ($this->data['type'] == 2) {
@@ -108,6 +96,9 @@ class Jobs implements ShouldQueue
         if ($this->data['type'] === 'fund_wallet') {
             $email = new MullaUserFundWalletEmail($this->data);
             Mail::to($this->data['email'])->send($email);
+
+            $customerIO = new CustomerIoService();
+            $customerIO->trackEvent($this->data, 'fund_wallet');
         }
 
         if ($this->data['type'] === 'verify_email') {
@@ -118,6 +109,25 @@ class Jobs implements ShouldQueue
         if ($this->data['type'] === 'transaction_successful') {
             $email = new MullaUserTransactionEmail($this->data);
             Mail::to($this->data['email'])->send($email);
+
+            $customerIO = new CustomerIoService();
+
+            // Track event in CustomerIO
+            if ($this->data['txn_type'] === 'Electricity Bill') {
+                $customerIO->trackEvent($this->data, 'electricity_successful');
+            }
+
+            if ($this->data['txn_type'] === 'Airtime Recharge') {
+                $customerIO->trackEvent($this->data, 'airtime_successful');
+            }
+
+            // if ($this->data['type'] === 'Data Purchase') {
+            //     $customerIO->trackEvent($this->data, 'data_successful');
+            // }
+
+            // if ($this->data['type'] === 'Cable Subscription') {
+            //     $customerIO->trackEvent($this->data, 'cable_successful');
+            // }
         }
     }
 }
