@@ -26,19 +26,21 @@ class CustomerIoService
      */
     public function identifyUser(array $user)
     {
-        $url = "{$this->baseUrl}/customers/{$user['user_id']}";
+        if (env("APP_ENV") === "production") {
+            $url = "{$this->baseUrl}/customers/{$user['user_id']}";
 
-        Http::withBasicAuth($this->siteId, $this->apiKey)
-            ->put($url, [
-                'id'         => $user['user_id'],
-                'email'      => $user['email'],
-                'first_name' => $user['firstname'],
-                'last_name'  => $user['lastname'],
-                'phone'      => $user['phone'],
-                'created_at' => strtotime($user['created_at']),
-            ]);
+            Http::withBasicAuth($this->siteId, $this->apiKey)
+                ->put($url, [
+                    'id'         => $user['user_id'],
+                    'email'      => $user['email'],
+                    'first_name' => $user['firstname'],
+                    'last_name'  => $user['lastname'],
+                    'phone'      => $user['phone'],
+                    'created_at' => strtotime($user['created_at']),
+                ]);
 
-        DiscordBots::dispatch(['message' => 'User identified in Customer.io']);
+            DiscordBots::dispatch(['message' => 'User identified in Customer.io']);
+        }
     }
 
     /**
@@ -50,14 +52,16 @@ class CustomerIoService
      */
     public function trackEvent(array $user, string $event)
     {
-        $url = "{$this->baseUrl}/customers/{$user['email']}/events";
+        if (env("APP_ENV") === "production") {
+            $url = "{$this->baseUrl}/customers/{$user['email']}/events";
 
-        Http::withBasicAuth($this->siteId, $this->apiKey)
-            ->post($url, [
-                'name'  => $event,
-                'data'  => $user
-            ]);
+            Http::withBasicAuth($this->siteId, $this->apiKey)
+                ->post($url, [
+                    'name'  => $event,
+                    'data'  => $user
+                ]);
 
-        DiscordBots::dispatch(['message' => 'User event tracked in Customer.io']);
+            DiscordBots::dispatch(['message' => 'User event tracked in Customer.io']);
+        }
     }
 }
