@@ -50,11 +50,10 @@ class CustomerIoService
      */
     public function trackEvent(array $user, string $event)
     {
-        $url = "{$this->baseUrl}/events";
+        $url = "{$this->baseUrl}/customers/{$user['email']}/events";
 
         Http::withBasicAuth($this->siteId, $this->apiKey)
             ->post($url, [
-                'email' => $user['email'],
                 'name'  => $event,
                 'data'  => $user
             ]);
