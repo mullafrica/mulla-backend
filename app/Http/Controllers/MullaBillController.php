@@ -8,6 +8,7 @@ use App\Jobs\DiscordBots;
 use App\Jobs\Jobs;
 use App\Models\MullaUserAirtimeNumbers;
 use App\Models\MullaUserCashbackWallets;
+use App\Models\MullaUserInternetDataNumbers;
 use App\Models\MullaUserMeterNumbers;
 use App\Models\MullaUserTransactions;
 use App\Models\MullaUserTvCardNumbers;
@@ -24,7 +25,16 @@ class MullaBillController extends Controller
 {
     use Reusables;
 
-    public $vtp_endpoint = "https://vtpass.com/api/";
+    // public $vtp_endpoint = "https://vtpass.com/api/";
+
+    public function vtp_endpoint()
+    {
+        if (env('APP_ENV') === 'production') {
+            return "https://vtpass.com/api/";
+        }
+
+        return "https://vtpass.com/api/";
+    }
 
     // A
     public function getOperators(Request $request)
@@ -107,6 +117,12 @@ class MullaBillController extends Controller
     public function getUserAirtimeNumbers()
     {
         $value = MullaUserAirtimeNumbers::where('user_id', Auth::id())->get();
+        return response()->json($value, 200);
+    }
+
+    public function getUserInternetDataNumbers()
+    {
+        $value = MullaUserInternetDataNumbers::where('user_id', Auth::id())->get();
         return response()->json($value, 200);
     }
 
@@ -208,7 +224,7 @@ class MullaBillController extends Controller
                 $ops = Http::withHeaders([
                     'api-key' => env('VTPASS_API_KEY'),
                     'public-key' => env('VTPASS_PUB_KEY')
-                ])->get($this->vtp_endpoint . 'services?identifier=' . $identifier);
+                ])->get($this->vtp_endpoint() . 'services?identifier=' . $identifier);
 
                 $data = $ops->json();
 
@@ -236,7 +252,7 @@ class MullaBillController extends Controller
                 $ops = Http::withHeaders([
                     'api-key' => env('VTPASS_API_KEY'),
                     'public-key' => env('VTPASS_PUB_KEY')
-                ])->get($this->vtp_endpoint . 'service-variations?serviceID=' . $request->id);
+                ])->get($this->vtp_endpoint() . 'service-variations?serviceID=' . $request->id);
 
                 return $ops->object()->content->variations;
             });
@@ -260,7 +276,7 @@ class MullaBillController extends Controller
                 'secret-key' => env('VTPASS_SEC_KEY')
             ])->withOptions([
                 'timeout' => 120,
-            ])->post($this->vtp_endpoint . 'merchant-verify?billersCode=' . $request->device_number . '&serviceID=' . $op_id . '&type=' . $request->meter_type);
+            ])->post($this->vtp_endpoint() . 'merchant-verify?billersCode=' . $request->device_number . '&serviceID=' . $op_id . '&type=' . $request->meter_type);
 
             $data = $validate->object();
 
@@ -305,7 +321,7 @@ class MullaBillController extends Controller
             'secret-key' => env('VTPASS_SEC_KEY')
         ])->withOptions([
             'timeout' => 120,
-        ])->post($this->vtp_endpoint . 'merchant-verify?billersCode=' . $request->device_number . '&serviceID=' . $request->service_id);
+        ])->post($this->vtp_endpoint() . 'merchant-verify?billersCode=' . $request->device_number . '&serviceID=' . $request->service_id);
 
         $data = $validate->object();
 
@@ -379,6 +395,23 @@ class MullaBillController extends Controller
             ]);
         }
 
+        if ($this->isData($request->serviceID)) {
+            $request->validate([
+                'recipient' => 'required',
+            ]);
+
+            if ($request->amount < 50) {
+                return response(['message' => 'Minimum amount is 50.'], 400);
+            }
+
+            MullaUserInternetDataNumbers::updateOrCreate([
+                'phone_number' => $request->recipient,
+                'user_id' => Auth::id(),
+            ], [
+                'telco' => $request->serviceID,
+            ]);
+        }
+
         if ($request->serviceID === 'showmax') {
             MullaUserMeterNumbers::updateOrCreate([
                 'meter_number' => $request->billersCode,
@@ -403,21 +436,21 @@ class MullaBillController extends Controller
                 'secret-key' => env('VTPASS_SEC_KEY')
             ])->withOptions([
                 'timeout' => 120,
-            ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&amount=' . $request->amount . '&phone=' . $request->recipient);
+            ])->post($this->vtp_endpoint() . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&amount=' . $request->amount . '&phone=' . $request->recipient);
         } elseif ($this->isData($request->serviceID)) {
             $pay = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
                 'secret-key' => env('VTPASS_SEC_KEY')
             ])->withOptions([
                 'timeout' => 120,
-            ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $request->recipient);
+            ])->post($this->vtp_endpoint() . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $request->recipient);
         } else {
             $pay = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
                 'secret-key' => env('VTPASS_SEC_KEY')
             ])->withOptions([
                 'timeout' => 120,
-            ])->post($this->vtp_endpoint . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $phone);
+            ])->post($this->vtp_endpoint() . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $phone);
         }
 
         $res = $pay->object();
@@ -455,7 +488,8 @@ class MullaBillController extends Controller
                     'bill_units' => $res->Units ?? $res->units ?? $res->mainTokenUnits ?? '',
                     'bill_device_id' => $res->content->transactions->unique_element ?? '',
                     'type' => $res->content->transactions->type ?? '',
-                    'voucher_code' => $res->purchased_code ?? $res->Voucher[0] ?? '',
+                    'voucher_code' => $res->cards[0]->pin ?? '',
+                    'voucher_serial' => $res->cards[0]->serialNumber ?? '',
                     'status' => true,
                 ]
             );
