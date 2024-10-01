@@ -13,7 +13,9 @@ use App\Mail\MullaWelcomeEmail;
 use App\Models\CustomerVirtualAccountsModel;
 use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserWallets;
+use App\Models\User;
 use App\Services\CustomerIoService;
+use App\Services\PushNotification;
 use App\Services\VirtualAccount;
 use App\Traits\Reusables;
 use Illuminate\Bus\Queueable;
@@ -94,11 +96,20 @@ class Jobs implements ShouldQueue
         }
 
         if ($this->data['type'] === 'fund_wallet') {
-            $email = new MullaUserFundWalletEmail($this->data);
-            Mail::to($this->data['email'])->send($email);
+            // Send a push notification
+            $pt = new PushNotification();
+
+            $pt->send([
+                'to' => User::where('email', $this->data['email'])->value('fcm_token'),
+                'title' => 'Mulla Africa',
+                'body' => 'You just funded your wallet with ' . number_format($this->data['amount'], 2) . ' NGN.'
+            ]);
 
             $customerIO = new CustomerIoService();
             $customerIO->trackEvent($this->data, 'fund_wallet');
+
+            $email = new MullaUserFundWalletEmail($this->data);
+            Mail::to($this->data['email'])->send($email);
         }
 
         if ($this->data['type'] === 'verify_email') {
@@ -107,8 +118,13 @@ class Jobs implements ShouldQueue
         }
 
         if ($this->data['type'] === 'transaction_successful') {
-            $email = new MullaUserTransactionEmail($this->data);
-            Mail::to($this->data['email'])->send($email);
+            $pt = new PushNotification();
+
+            $pt->send([
+                'to' => User::where('email', $this->data['email'])->value('fcm_token'),
+                'title' => 'Mulla Africa',
+                'body' => 'Your ' . $this->data['utility'] . 'Purchase was successful.'
+            ]);
 
             $customerIO = new CustomerIoService();
 
@@ -120,6 +136,11 @@ class Jobs implements ShouldQueue
             if ($this->data['txn_type'] === 'Airtime Recharge') {
                 $customerIO->trackEvent($this->data, 'airtime_successful');
             }
+
+            $email = new MullaUserTransactionEmail($this->data);
+            Mail::to($this->data['email'])->send($email);
+
+
 
             // if ($this->data['type'] === 'Data Purchase') {
             //     $customerIO->trackEvent($this->data, 'data_successful');

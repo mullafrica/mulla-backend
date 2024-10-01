@@ -7,5 +7,7 @@ class Compliance
     public function checkUserCompliance($user)
     {
         return true;
+
+        //
     }
 }
