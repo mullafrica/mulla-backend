@@ -25,8 +25,6 @@ class MullaBillController extends Controller
 {
     use Reusables;
 
-    // public $vtp_endpoint = "https://vtpass.com/api/";
-
     public function vtp_endpoint()
     {
         if (env('APP_ENV') === 'production') {

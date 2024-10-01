@@ -276,4 +276,20 @@ class MullaAuthController extends Controller
             'cashback_wallet' => number_format(MullaUserCashbackWallets::where('user_id', Auth::id())->sum('balance'), 2)
         ], 200);
     }
+
+    public function updateFcm(Request $request) {
+        $request->validate([
+            'token' => 'required'
+        ]);
+
+        if ($user = User::where('id', Auth::id())->first()) {
+            $user->update([
+                'fcm_token' => $request->token
+            ]);
+
+            return response([
+                'message' => 'FCM token updated successfully.'
+            ], 200);
+        }
+    }
 }

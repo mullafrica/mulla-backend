@@ -65,6 +65,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/comet/user/tv/card/numbers',  [MullaBillController::class, 'getUserTvCardNumbers']);
     Route::get('/comet/user/airtime/numbers',  [MullaBillController::class, 'getUserAirtimeNumbers']);
     Route::get('/comet/user/internetdata/numbers',  [MullaBillController::class, 'getUserInternetDataNumbers']);
+    Route::post('/comet/user/fcm',  [MullaAuthController::class, 'updateFcm']);
 
     Route::get('/comet/user/wallets',  [MullaAuthController::class, 'getUserWallets']);
 
