@@ -53,7 +53,7 @@ Route::get('/admin/transactions', [MullaPersonalAdminController::class, 'getAllT
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/comet/logout', [MullaAuthController::class, 'logout']);
     // Route::get('/comet/users/all', [MullaAuthController::class, 'all']);
-    Route::get('/comet/users/{id}', [MullaAuthController::class, 'getUser']);
+    Route::get('/comet/user', [MullaAuthController::class, 'getUser']);
 
     Route::get('/comet/supported/ops', [MullaBillController::class, 'getVTPassOperatorProducts']);
     Route::get('/comet/supported/ops/variation', [MullaBillController::class, 'getVTPassOperatorProductVariation']);

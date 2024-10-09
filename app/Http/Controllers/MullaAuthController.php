@@ -264,9 +264,7 @@ class MullaAuthController extends Controller
 
     public function getUser(Request $request)
     {
-        return response()->json([
-            'user' => $request->user()
-        ], 200);
+        return response($request->user(), 200);
     }
 
     public function getUserWallets()
