@@ -26,7 +26,6 @@ class CustomerIoService
      */
     public function identifyUser(array $user)
     {
-        return;
         if (env("APP_ENV") === "production") {
             $url = "{$this->baseUrl}/customers/{$user['user_id']}";
 
@@ -53,7 +52,6 @@ class CustomerIoService
      */
     public function trackEvent(array $user, string $event)
     {
-        return;
         if (env("APP_ENV") === "production") {
             $url = "{$this->baseUrl}/customers/{$user['email']}/events";
 

@@ -30,12 +30,6 @@ class MullaStatsController extends Controller
             ];
         });
 
-        $customerIO = new CustomerIoService();
-        $customerIO->trackEvent([
-            'email' => $user->email,
-            'created_at' => Carbon::now()->toDateTimeString(),
-        ], 'clicked_stats');
-
         return response($data, 200);
     }
 }
