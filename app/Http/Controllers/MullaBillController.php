@@ -282,8 +282,8 @@ class MullaBillController extends Controller
                 // Fetch and store data
                 $device = $validate->object();
 
-                // Check if the meter number has more than two duplicates and delete only the first one
-                if (MullaUserMeterNumbers::where('meter_number', $request->device_number)->count() > 2) {
+                // Check if the meter number has two duplicates and delete only the first one
+                if (MullaUserMeterNumbers::where('meter_number', $request->device_number)->count() > 1) {
                     MullaUserMeterNumbers::where('meter_number', $request->device_number)->first()->delete();
                 }
 
