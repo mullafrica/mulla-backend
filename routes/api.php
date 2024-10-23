@@ -5,6 +5,7 @@ use App\Http\Controllers\Business\MullaBusinessBulkTransferController;
 use App\Http\Controllers\MullaAuthController;
 use App\Http\Controllers\MullaBillController;
 use App\Http\Controllers\MullaPersonalAdminController;
+use App\Http\Controllers\MullaPushNotificationController;
 use App\Http\Controllers\MullaStatsController;
 use App\Http\Controllers\MullaTransactionsController;
 use App\Http\Controllers\MullaTransferController;
@@ -55,6 +56,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::get('/comet/users/all', [MullaAuthController::class, 'all']);
     Route::get('/comet/user', [MullaAuthController::class, 'getUser']);
 
+    Route::get('/comet/verify/token', function (Request $request) {
+        return true;
+    });
+
     Route::get('/comet/supported/ops', [MullaBillController::class, 'getVTPassOperatorProducts']);
     Route::get('/comet/supported/ops/variation', [MullaBillController::class, 'getVTPassOperatorProductVariation']);
 
@@ -94,7 +99,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Stats
     Route::get('/comet/account/stats', [MullaStatsController::class, 'getStats']);
+    Route::get('/comet/account/txn/lastfive', [MullaStatsController::class, 'getLastFiveTxns']);
 
+    Route::post('/comet/push/notification', [MullaPushNotificationController::class, 'sendNotification']);
+    Route::post('/comet/push/notification/all', [MullaPushNotificationController::class, 'sendNotificationToAll']);
 });
 
 
