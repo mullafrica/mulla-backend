@@ -83,7 +83,7 @@ class MullaStatsController extends Controller
         $txns = MullaUserTransactions::where("user_id", $user->id)
             ->where("type", "Electricity Bill")
             ->orderBy("created_at", "desc")
-            ->take(5)
+            ->take(4)
             ->pluck("amount")
             ->unique();
         return response($txns, 200);
