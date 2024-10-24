@@ -59,10 +59,12 @@ class MullaAuthController extends Controller
                     'platform' => $platform,
                 ], 'last_sign_in');
 
+                $token = $user->createToken($request->phone)->plainTextToken;
+
                 return response()->json([
                     'message' => 'Logged in.',
                     'user' => $user,
-                    'token' => $user->createToken($request->phone)->plainTextToken
+                    'token' => $token
                 ], 200);
             } else {
                 return response()->json([
@@ -107,6 +109,9 @@ class MullaAuthController extends Controller
         $request->validate([
             'token' => 'required',
         ]);
+
+        $browser = Browser::browserFamily();
+        $platform = Browser::platformName();
 
         // Verify token
         if ($vt = VerifyEmailToken::where('token', $request->token)->where('email', $request->email)->first()) {
@@ -166,6 +171,9 @@ class MullaAuthController extends Controller
             'phone' => $request->phone,
             'email' => $request->email,
             'created_at' => Carbon::now()->toDateTimeString(),
+            'ip' => request()->ip(),
+            'browser' =>  $browser,
+            'platform' => $platform,
         ]);
 
         $this->sendToDiscord($user->firstname . ', ' . $user->email . ' just created an account!');
