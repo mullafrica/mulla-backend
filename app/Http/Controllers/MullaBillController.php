@@ -133,6 +133,11 @@ class MullaBillController extends Controller
             'amount' => 'required'
         ]);
 
+        // if amount negative
+        if ($request->amount < 0) {
+            return response()->json(['error' => 'Amount cannot be negative'], 400);
+        }
+
         if ($request->bill == 'electricity') {
             $request->validate([
                 'meter_type' => 'required',
@@ -360,6 +365,10 @@ class MullaBillController extends Controller
             'amount' => 'required',
             'fromWallet' => 'required'
         ]);
+
+        if ($request->amount < 0) {
+            return response()->json(['message' => 'Amount cannot be negative'], 400);
+        }
 
         /**
          * The payment reference should be unique this helps us to avoid duplicate payments or hacked payments
