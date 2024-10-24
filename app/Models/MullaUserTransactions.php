@@ -61,7 +61,9 @@ class MullaUserTransactions extends Model
         if ($this->type !== 'Electricity Bill') {
             return null;
         }
-        return User::where('id', $this->user_id)->first()->firstname . ' ' . User::where('id', $this->user_id)->first()->lastname;
+
+        // instead of attempt to read transaction on null error on firstname or lastname, we use null coalescing operator
+        return User::where('id', $this->user_id)->first()->firstname ?? null . ' ' . User::where('id', $this->user_id)->first()->lastname ?? null;
     }
 
     public function getAddressAttribute()
