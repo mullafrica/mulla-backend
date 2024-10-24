@@ -366,8 +366,9 @@ class MullaBillController extends Controller
             'fromWallet' => 'required'
         ]);
 
-        if ($request->amount < 0) {
-            return response()->json(['message' => 'Amount cannot be negative'], 400);
+        // 1. Amount is negative
+        if ($request->amount <= 0) {
+            return response()->json(['message' => 'An error occured, please try again.'], 400);
         }
 
         /**
