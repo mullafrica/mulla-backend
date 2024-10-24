@@ -101,4 +101,9 @@ class User extends Authenticatable
     public function getCreatedAtAttribute($value) {
         return Carbon::parse($value)->isoFormat('ll');
     }
+
+    public function ip()
+    {
+        return $this->hasMany(MullaUserIPDetailsModel::class, 'user_id', 'id');
+    }
 }

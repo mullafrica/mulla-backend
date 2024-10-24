@@ -12,6 +12,7 @@ use App\Mail\MullaVerifyUserEmail;
 use App\Mail\MullaWelcomeEmail;
 use App\Models\CustomerVirtualAccountsModel;
 use App\Models\MullaUserCashbackWallets;
+use App\Models\MullaUserIPDetailsModel;
 use App\Models\MullaUserWallets;
 use App\Models\User;
 use App\Services\CustomerIoService;
@@ -78,6 +79,16 @@ class Jobs implements ShouldQueue
             // 1 -> Add to CustomerIO
             $customerIO = new CustomerIoService();
             $customerIO->identifyUser($this->data);
+
+            $info = $this->getUserDetails($this->data['ip']);
+
+            MullaUserIPDetailsModel::create([
+                'user_id' => User::where('email', $this->data['email'])->value('id'),
+                'ip' => $this->data['ip'],
+                'browser' => $this->data['browser'],
+                'platform' => $this->data['platform'],
+                'location' =>  $info['location']['city'] . ', ' . $info['location']['country'] . ', ' . $info['location']['latitude'] . ', ' . $info['location']['longitude'],
+            ]);
         }
 
         if ($this->data['type'] == 2) {
@@ -93,6 +104,17 @@ class Jobs implements ShouldQueue
         if ($this->data['type'] === 'login') {
             $email = new MullaUserLoginEmail($this->data);
             Mail::to($this->data['email'])->send($email);
+
+            $info = $this->getUserDetails($this->data['ip']);
+
+            MullaUserIPDetailsModel::updateOrCreate([
+                'user_id' => User::where('email', $this->data['email'])->value('id'),
+                'ip' => $this->data['ip'],
+            ],[
+                'browser' => $this->data['browser'],
+                'platform' => $this->data['platform'],
+                'location' =>  $info['location']['city'] . ', ' . $info['location']['country'] . ', ' . $info['location']['latitude'] . ', ' . $info['location']['longitude'],
+            ]);
         }
 
         if ($this->data['type'] === 'fund_wallet') {
@@ -101,8 +123,8 @@ class Jobs implements ShouldQueue
 
             $pt->send([
                 'to' => User::where('email', $this->data['email'])->value('fcm_token'),
-                'title' => 'Mulla Africa',
-                'body' => 'You just funded your wallet with ' . number_format($this->data['amount'], 2) . ' NGN.'
+                'title' => 'Mulla',
+                'body' => 'Your account just got funded with ' . number_format($this->data['amount'], 2) . ' NGN.'
             ]);
 
             $customerIO = new CustomerIoService();
@@ -122,7 +144,7 @@ class Jobs implements ShouldQueue
 
             $pt->send([
                 'to' => User::where('email', $this->data['email'])->value('fcm_token'),
-                'title' => 'Mulla Africa',
+                'title' => 'Mulla',
                 'body' => 'Your ' . $this->data['utility'] . 'Purchase was successful.'
             ]);
 
@@ -139,8 +161,6 @@ class Jobs implements ShouldQueue
 
             $email = new MullaUserTransactionEmail($this->data);
             Mail::to($this->data['email'])->send($email);
-
-
 
             // if ($this->data['type'] === 'Data Purchase') {
             //     $customerIO->trackEvent($this->data, 'data_successful');

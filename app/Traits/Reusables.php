@@ -40,8 +40,8 @@ trait Reusables
                     // 'region' => 'Lagos',
                     'city' => 'Ike',
                     // 'zip_code' => '100100',
-                    // 'latitude' => '6',
-                    // 'longitude' => '7',
+                    'latitude' => '6',
+                    'longitude' => '7',
                     // 'timezone' => 'Africa/Lagos',
                 ],
             ];
@@ -65,8 +65,8 @@ trait Reusables
                 // 'region' => $location->regionName,
                 'city' => $location->cityName,
                 // 'zip_code' => $location->zipCode,
-                // 'latitude' => $location->latitude,
-                // 'longitude' => $location->longitude,
+                'latitude' => $location->latitude,
+                'longitude' => $location->longitude,
                 // 'timezone' => $location->timezone,
             ] : null,
         ];
