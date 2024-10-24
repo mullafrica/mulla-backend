@@ -62,8 +62,13 @@ class MullaUserTransactions extends Model
             return null;
         }
 
+        // Check if the user exists
+        if (!User::where('id', $this->user_id)->exists()) {
+            return null;
+        }
+
         // instead of attempt to read transaction on null error on firstname or lastname, we use null coalescing operator
-        return User::where('id', $this->user_id)->first()->firstname ?? null . ' ' . User::where('id', $this->user_id)->first()->lastname ?? null;
+        return User::where('id', $this->user_id)->first()->firstname . ' ' . User::where('id', $this->user_id)->first()->lastname;
     }
 
     public function getAddressAttribute()
