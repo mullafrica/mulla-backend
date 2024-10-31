@@ -366,13 +366,14 @@ class MullaBillController extends Controller
             'fromWallet' => 'required'
         ]);
 
-        // 1. Amount is negative
-        if ($request->amount <= 0) {
-            return response()->json(['message' => 'An error occured, please try again.'], 400);
+        $amount = (float) preg_replace('/[^0-9.]/', '', $request->amount);
+        
+        if ($amount <= 0) {
+            return response()->json(['message' => 'Amount cannot be zero.'], 400);
         }
 
         /**
-         * The payment reference should be unique this helps us to avoid duplicate payments or hacked payments
+         * The payment reference should be unique this helps us avoid duplicate payments or hacked payments
          * with old payment reference ids
          */
         if (!MullaUserTransactions::where('payment_reference', $request->payment_reference)->where('status', false)->exists()) {
@@ -386,7 +387,7 @@ class MullaBillController extends Controller
         }
 
         if ($request->serviceID === 'electricity') {
-            if ($request->amount < 500) {
+            if ($amount < 500) {
                 return response(['message' => 'Minimum amount is 500.'], 400);
             }
         }
@@ -396,7 +397,7 @@ class MullaBillController extends Controller
                 'recipient' => 'required|digits:11',
             ]);
 
-            if ($request->amount < 50) {
+            if ($amount < 50) {
                 return response(['message' => 'Minimum amount is 50.'], 400);
             }
 
@@ -413,7 +414,7 @@ class MullaBillController extends Controller
                 'recipient' => 'required',
             ]);
 
-            if ($request->amount < 50) {
+            if ($amount < 50) {
                 return response(['message' => 'Minimum amount is 50.'], 400);
             }
 
@@ -436,10 +437,10 @@ class MullaBillController extends Controller
 
         /** Check wallet if true */
         if ($request->fromWallet == 'true') {
-            if (!$ws->checkBalance($request->amount * BaseUrls::MULTIPLIER)) {
+            if (!$ws->checkBalance($amount * BaseUrls::MULTIPLIER)) {
                 return response(['message' => 'Low wallet balance.'], 200);
             } else {
-                $ws->decrementBalance($request->amount);
+                $ws->decrementBalance($amount);
             }
         }
 
@@ -449,21 +450,21 @@ class MullaBillController extends Controller
                 'secret-key' => env('VTPASS_SEC_KEY')
             ])->withOptions([
                 'timeout' => 120,
-            ])->post($this->vtp_endpoint() . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&amount=' . $request->amount . '&phone=' . $request->recipient);
+            ])->post($this->vtp_endpoint() . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&amount=' . $amount . '&phone=' . $request->recipient);
         } elseif ($this->isData($request->serviceID)) {
             $pay = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
                 'secret-key' => env('VTPASS_SEC_KEY')
             ])->withOptions([
                 'timeout' => 120,
-            ])->post($this->vtp_endpoint() . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $request->recipient);
+            ])->post($this->vtp_endpoint() . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $amount . '&phone=' . $request->recipient);
         } else {
             $pay = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
                 'secret-key' => env('VTPASS_SEC_KEY')
             ])->withOptions([
                 'timeout' => 120,
-            ])->post($this->vtp_endpoint() . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $request->amount . '&phone=' . $phone);
+            ])->post($this->vtp_endpoint() . 'pay?request_id=' . $request_id . '&serviceID=' . $request->serviceID . '&billersCode=' . $request->billersCode . '&variation_code=' . $request->variation_code . '&amount=' . $amount . '&phone=' . $phone);
         }
 
         $res = $pay->object();
@@ -471,17 +472,17 @@ class MullaBillController extends Controller
         DiscordBots::dispatch(['message' => json_encode($res)]);
 
         if (isset($res->code) && !in_array($res->code, ['000', '099'])) {
-            MullaUserWallets::where('user_id', Auth::id())->increment('balance', $request->amount);
+            MullaUserWallets::where('user_id', Auth::id())->increment('balance', $amount);
             DiscordBots::dispatch(['message' => 'An error occured, user has been refunded (ID:' . Auth::id() . ') - ' . $request->serviceID . ' ' . json_encode($res)]);
             return response(['message' => 'An error occured, we have refunded the amount to your wallet.'], 400);
         }
 
         if (isset($res->response_description) && $res->response_description === 'TRANSACTION SUCCESSFUL') {
             MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
-                ->increment('balance', $request->amount * $this->cashBack($request->serviceID));
+                ->increment('balance', $amount * $this->cashBack($request->serviceID));
 
             MullaUserWallets::updateOrCreate(['user_id' => Auth::id()])
-                ->increment('balance', $request->amount * $this->cashBack($request->serviceID));
+                ->increment('balance', $amount * $this->cashBack($request->serviceID));
 
             $txn = MullaUserTransactions::updateOrCreate(
                 [
@@ -494,8 +495,8 @@ class MullaBillController extends Controller
                     'unique_element' => $res->content->transactions->unique_element ?? '',
                     'product_name' => $res->content->transactions->product_name ?? '',
 
-                    'cashback' => $request->amount * $this->cashBack($request->serviceID),
-                    'amount' => $request->amount,
+                    'cashback' => $amount * $this->cashBack($request->serviceID),
+                    'amount' => $amount,
                     'vat' => $res->Tax ?? $res->mainTokenTax ?? 0,
                     'bill_token' => $res->Reference ?? $res->token ?? $res->Token ?? $res->mainToken ?? '',
                     'bill_units' => $res->Units ?? $res->units ?? $res->mainTokenUnits ?? '',
@@ -538,8 +539,8 @@ class MullaBillController extends Controller
                 ],
                 [
                     'bill_reference' => $res->content->transactions->transactionId,
-                    'cashback' => $request->amount * $this->cashBack($request->serviceID),
-                    'amount' => $request->amount,
+                    'cashback' => $amount * $this->cashBack($request->serviceID),
+                    'amount' => $amount,
                     'bill_device_id' => $res->content->transactions->unique_element,
                     'type' => $res->content->transactions->type,
                     'status' => true,
