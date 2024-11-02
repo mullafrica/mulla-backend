@@ -223,25 +223,26 @@ class MullaBillController extends Controller
         }
 
         if ($identifier) {
-            // $response = Cache::remember('operator_products_' . $identifier, 60 * 60 * 24, function () use ($identifier) {
-            $ops = Http::withHeaders([
-                'api-key' => env('VTPASS_API_KEY'),
-                'public-key' => env('VTPASS_PUB_KEY')
-            ])->get($this->vtp_endpoint() . 'services?identifier=' . $identifier);
+            $response = Cache::remember('operator_products_' . $identifier, 60 * 60 * 24, function () use ($identifier) {
+                $ops = Http::withHeaders([
+                    'api-key' => env('VTPASS_API_KEY'),
+                    'public-key' => env('VTPASS_PUB_KEY')
+                ])->get($this->vtp_endpoint() . 'services?identifier=' . $identifier);
 
-            $data = $ops->json();
+                $data = $ops->json();
 
-            $mappedContent = array_map(function ($service) {
-                $service['id'] = $service['serviceID']; // Create a new 'id' property
-                unset($service['serviceID']); // Remove the original 'serviceID' property
-                return $service;
-            }, $data['content']);
+                $mappedContent = array_map(function ($service) {
+                    $service['id'] = $service['serviceID']; // Create a new 'id' property
+                    unset($service['serviceID']); // Remove the original 'serviceID' property
+                    return $service;
+                }, $data['content']);
 
-            $response['data'] = $mappedContent;
+                $response['data'] = $mappedContent;
+
+                return $response;
+            });
 
             return $response;
-            // });
-            // return $response;
         } else {
             return response()->json(['error' => 'Bill identifier not provided'], 400);
         }
