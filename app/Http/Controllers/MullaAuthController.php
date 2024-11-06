@@ -69,12 +69,12 @@ class MullaAuthController extends Controller
             } else {
                 return response()->json([
                     'message' => 'Incorrect password, try again.'
-                ], 401);
+                ], 400);
             }
         } else {
             return response()->json([
                 'message' => 'Account not found, please sign up first.'
-            ], 404);
+            ], 400);
         }
     }
 
