@@ -117,7 +117,7 @@ class MullaAuthController extends Controller
         if ($vt = VerifyEmailToken::where('token', $request->token)->where('email', $request->email)->first()) {
             $vt->delete();
         } else {
-            return response(['message' => 'Invalid token, please request for a new one.'], 401);
+            return response(['message' => 'Invalid token, please request for a new one.'], 400);
         }
 
         // Check if user exists
@@ -230,7 +230,7 @@ class MullaAuthController extends Controller
         if (!$fg) {
             return response()->json([
                 'message' => 'Token not found or expired, request a new one.'
-            ], 401);
+            ], 400);
         }
 
         $user = User::where('email', $fg->email)->first();
@@ -238,7 +238,7 @@ class MullaAuthController extends Controller
         if (!$user) {
             return response()->json([
                 'message' => 'Invalid email'
-            ], 401);
+            ], 400);
         }
 
         $user->update([
