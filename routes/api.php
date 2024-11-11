@@ -84,7 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
         [MullaBillController::class, 'getOperatorProducts']
     );
 
-    Route::middleware(['throttle:5,1']) // 1 request per minute
+    Route::middleware(['throttle:3,1']) // 1 request per minute
         ->group(function () {
             Route::post('/comet/bill/pay', [MullaBillController::class, 'payVTPassBill']);
             Route::post('/comet/wallet/pay', [WalletController::class, 'payWithWallet']);
