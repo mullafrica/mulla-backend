@@ -373,6 +373,8 @@ class MullaBillController extends Controller
             return response()->json(['message' => 'An error occured.'], 400);
         }
 
+        return response(['message' => 'Service temporarily unavailable.'], 400);
+
         /**
          * The payment reference should be unique this helps us avoid duplicate payments or hacked payments
          * with old payment reference ids
