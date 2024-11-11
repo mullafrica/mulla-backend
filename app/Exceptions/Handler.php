@@ -4,6 +4,7 @@ namespace App\Exceptions;
 
 use App\Traits\Reusables;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
@@ -28,6 +29,12 @@ class Handler extends ExceptionHandler
     {
         $this->renderable(function (NotFoundHttpException $e) {
             return response()->json(['message' => 'You are not authorized.'], status: 404);
+        });
+
+        $this->renderable(function (ThrottleRequestsException $e) {
+            return response()->json([
+                'message' => 'Too many requests.',
+            ], 400);
         });
 
         $this->reportable(function (Throwable $e) {

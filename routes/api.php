@@ -84,11 +84,14 @@ Route::middleware('auth:sanctum')->group(function () {
         [MullaBillController::class, 'getOperatorProducts']
     );
 
-    Route::post('/comet/bill/pay', [MullaBillController::class, 'payVTPassBill']);
+    Route::middleware(['throttle:1,1']) // 1 request per minute
+        ->group(function () {
+            Route::post('/comet/bill/pay', [MullaBillController::class, 'payVTPassBill']);
+            Route::post('/comet/wallet/pay', [WalletController::class, 'payWithWallet']);
+        });
 
     // Wallet
     Route::get('/comet/wallet/dva', [WalletController::class, 'getVirtualAccount']);
-    Route::post('/comet/wallet/pay', [WalletController::class, 'payWithWallet']);
 
     // Transfer
     Route::get('/comet/transfer/banks', [MullaTransferController::class, 'getBanks']);
