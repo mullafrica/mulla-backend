@@ -52,7 +52,7 @@ class WalletController extends Controller
             'amount' => 'required',
         ]);
 
-        if ($ws->checkBalance($request->amount * BaseUrls::MULTIPLIER)) {
+        if ($ws->checkBalanceOnly($request->amount * BaseUrls::MULTIPLIER)) {
 
             $m = MullaUserTransactions::create(
                 [

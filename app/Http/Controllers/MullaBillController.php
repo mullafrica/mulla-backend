@@ -366,10 +366,11 @@ class MullaBillController extends Controller
             'fromWallet' => 'required'
         ]);
 
-        $amount = (float) preg_replace('/[^0-9.]/', '', $request->amount);
+        $amount = $request->amount;
 
-        if ($amount <= 0) {
-            return response()->json(['message' => 'Amount cannot be zero.'], 400);
+        /** Check if amount is numeric and greater than 0 (whitelist) */
+        if (!is_numeric($amount) || $amount <= 0) {
+            return response()->json(['message' => 'An error occured.'], 400);
         }
 
         /**
@@ -435,12 +436,10 @@ class MullaBillController extends Controller
 
         $phone = Auth::user()->phone;
 
-        /** Check wallet if true */
-        if ($request->fromWallet == 'true') {
-            if (!$ws->checkBalance($amount * BaseUrls::MULTIPLIER)) {
-                return response(['message' => 'Low wallet balance.'], 200);
-            } else {
-                $ws->decrementBalance($amount);
+        /** Check if transaction payment is from wallet */
+        if ($request->fromWallet === 'true') {
+            if (!$ws->checkDecrementBalance($amount)) {
+                return response(['message' => 'Low wallet balance.'], 400);
             }
         }
 
@@ -472,9 +471,10 @@ class MullaBillController extends Controller
         DiscordBots::dispatch(['message' => json_encode($res)]);
 
         if (isset($res->code) && !in_array($res->code, ['000', '099'])) {
-            MullaUserWallets::where('user_id', Auth::id())->increment('balance', $amount);
-            DiscordBots::dispatch(['message' => 'An error occured, user has been refunded (ID:' . Auth::id() . ') - ' . $request->serviceID . ' ' . json_encode($res)]);
-            return response(['message' => 'An error occured, we have refunded the amount to your wallet.'], 400);
+            // TODO: Uncomment this when we fix the issue with unfiltered values bypassing the whitelist
+            // MullaUserWallets::where('user_id', Auth::id())->increment('balance', $amount);
+            DiscordBots::dispatch(['message' => 'An error occured, check and refund user with (ID:' . Auth::id() . ') - ' . $request->serviceID . ' ' . json_encode($res)]);
+            return response(['message' => 'An error occured, please contact support.'], 400);
         }
 
         if (isset($res->response_description) && $res->response_description === 'TRANSACTION SUCCESSFUL') {
