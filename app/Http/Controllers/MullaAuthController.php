@@ -59,7 +59,7 @@ class MullaAuthController extends Controller
                     'platform' => $platform,
                 ], 'last_sign_in');
 
-                $token = $user->createToken($request->phone)->plainTextToken;
+                $token = $user->createToken($request->phone, ['*'], now()->addMinutes(config('sanctum.expiration')))->plainTextToken;
 
                 return response()->json([
                     'message' => 'Logged in.',
@@ -181,7 +181,7 @@ class MullaAuthController extends Controller
         return response()->json([
             'message' => 'User created successfully.',
             'user' => $user,
-            'token' => $user->createToken($request->phone)->plainTextToken
+            'token' => $user->createToken($request->phone, ['*'], now()->addMinutes(config('sanctum.expiration')))->plainTextToken
         ], 200);
     }
 
