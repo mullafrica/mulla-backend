@@ -26,26 +26,23 @@ class WalletService implements IWalletService
     public function checkDecrementBalance(int $amount)
     {
         try {
-            DB::beginTransaction();
+            // DB::beginTransaction();
 
-            $wallet = MullaUserWallets::where('user_id', Auth::id())
-                ->lockForUpdate()
-                ->first();
+            $wallet = MullaUserWallets::where('user_id', Auth::id())->first();
 
             $amountInKobo = $amount * BaseUrls::MULTIPLIER;
 
             if (!$this->hasEnoughBalance($wallet, $amountInKobo)) {
-                DB::rollBack();
+                // DB::rollBack();
                 return false;
             }
 
             $wallet->decrement('balance', $amount);
 
-            DB::commit();
+            // DB::commit();
 
             return true;
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('Wallet transaction failed', [
                 'user_id' => Auth::id(),
                 'amount' => $amount,
