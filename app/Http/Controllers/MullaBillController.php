@@ -362,7 +362,7 @@ class MullaBillController extends Controller
             'payment_reference' => 'required',
             'serviceID' => 'required',
             'billersCode' => 'required',
-            'amount' => 'required',
+            'amount' => 'required|numeric',
             'fromWallet' => 'required'
         ]);
 
@@ -373,28 +373,26 @@ class MullaBillController extends Controller
             return response()->json(['message' => 'An error occured.'], 400);
         }
 
-        return response(['message' => 'Service temporarily unavailable.'], 400);
-
-        /**
-         * The payment reference should be unique this helps us avoid duplicate payments or hacked payments
-         * with old payment reference ids
-         */
+        /** Unique payment reference for each transaction */
         if (!MullaUserTransactions::where('payment_reference', $request->payment_reference)->where('status', false)->exists()) {
             return response(['message' => 'Payment ref error.'], 400);
         }
 
+        /** Validate variation code if airtime or data */
         if (!$this->isAirtime($request->serviceID)) {
             $request->validate([
                 'variation_code' => 'required'
             ]);
         }
 
+        /** Validate minimum amount for electricity */
         if ($request->serviceID === 'electricity') {
             if ($amount < 500) {
                 return response(['message' => 'Minimum amount is 500.'], 400);
             }
         }
 
+        /** Validate recipient if airtime or data */
         if ($this->isAirtime($request->serviceID)) {
             $request->validate([
                 'recipient' => 'required|digits:11',
@@ -412,6 +410,7 @@ class MullaBillController extends Controller
             ]);
         }
 
+        /** Validate recipient if data */
         if ($this->isData($request->serviceID)) {
             $request->validate([
                 'recipient' => 'required',
@@ -429,6 +428,7 @@ class MullaBillController extends Controller
             ]);
         }
 
+        /** Validate meter number if showmax */
         if ($request->serviceID === 'showmax') {
             MullaUserMeterNumbers::updateOrCreate([
                 'meter_number' => $request->billersCode,
@@ -438,13 +438,16 @@ class MullaBillController extends Controller
 
         $phone = Auth::user()->phone;
 
-        /** Check if transaction payment is from wallet */
-        if ($request->fromWallet === 'true') {
-            if (!$ws->checkDecrementBalance($amount)) {
-                return response(['message' => 'Low wallet balance.'], 400);
+        /** Check wallet if true */
+        if ($request->fromWallet == 'true') {
+            if (!$ws->checkBalance($amount * BaseUrls::MULTIPLIER)) {
+                return response(['message' => 'Low wallet balance.'], 200);
+            } else {
+                $ws->decrementBalance($amount);
             }
         }
 
+        /** Pay airtime or data */
         if ($this->isAirtime($request->serviceID)) {
             $pay = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
@@ -470,15 +473,15 @@ class MullaBillController extends Controller
 
         $res = $pay->object();
 
-        DiscordBots::dispatch(['message' => json_encode($res)]);
-
+        /** Check if payment was successful */
         if (isset($res->code) && !in_array($res->code, ['000', '099'])) {
-            // TODO: Uncomment this when we fix the issue with unfiltered values bypassing the whitelist
+            // TODO: turn on refund user when we fix the issue with validating input
             // MullaUserWallets::where('user_id', Auth::id())->increment('balance', $amount);
             DiscordBots::dispatch(['message' => 'An error occured, check and refund user with (ID:' . Auth::id() . ') - ' . $request->serviceID . ' ' . json_encode($res)]);
             return response(['message' => 'An error occured, please contact support.'], 400);
         }
 
+        /** Update cashback & wallet balance */
         if (isset($res->response_description) && $res->response_description === 'TRANSACTION SUCCESSFUL') {
             MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
                 ->increment('balance', $amount * $this->cashBack($request->serviceID));
@@ -551,6 +554,8 @@ class MullaBillController extends Controller
 
             return response()->json(['message' => 'Service not available at the moment.'], 400);
         }
+
+        DiscordBots::dispatch(['message' => json_encode($res)]);
 
         return response()->json(['message' => 'An error occured, please contact support.'], 400);
     }
