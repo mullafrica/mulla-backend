@@ -481,6 +481,9 @@ class MullaBillController extends Controller
             return response(['message' => 'An error occured, please contact support.'], 400);
         }
 
+        /** Log the response to discord */
+        DiscordBots::dispatch(['message' => json_encode($res)]);
+
         /** Update cashback & wallet balance */
         if (isset($res->response_description) && $res->response_description === 'TRANSACTION SUCCESSFUL') {
             MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
@@ -554,8 +557,6 @@ class MullaBillController extends Controller
 
             return response()->json(['message' => 'Service not available at the moment.'], 400);
         }
-
-        DiscordBots::dispatch(['message' => json_encode($res)]);
 
         return response()->json(['message' => 'An error occured, please contact support.'], 400);
     }
