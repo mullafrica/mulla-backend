@@ -33,7 +33,8 @@ class Handler extends ExceptionHandler
 
         $this->renderable(function (ThrottleRequestsException $e) {
             return response()->json([
-                'message' => 'Too many requests.',
+                'message' => 'Too many requests. Please try again after 1 minute.',
+                'status' => false
             ], 400);
         });
 
