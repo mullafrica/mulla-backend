@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
 
 class MullaBillController extends Controller
 {
@@ -237,7 +238,12 @@ class MullaBillController extends Controller
                     return $service;
                 }, $data['content']);
 
-                $response['data'] = $mappedContent;
+                // Filter out foreign-airtime
+                $mappedContent = array_filter($mappedContent, function($service) {
+                    return $service['id'] !== 'foreign-airtime';
+                });
+
+                $response['data'] = array_values($mappedContent);
 
                 return $response;
             });
@@ -362,7 +368,7 @@ class MullaBillController extends Controller
             'payment_reference' => 'required',
             'serviceID' => 'required',
             'billersCode' => 'required',
-            'amount' => 'required|numeric',
+            'amount' => 'required|numeric|min:0',
             'fromWallet' => 'required'
         ]);
 
@@ -370,7 +376,12 @@ class MullaBillController extends Controller
 
         /** Check if amount is numeric and greater than 0 (whitelist) */
         if (!is_numeric($amount) || $amount <= 0) {
-            return response()->json(['message' => 'An error occured.'], 400);
+            return response()->json(['message' => 'Invalid amount provided. Please provide a valid amount.'], 400);
+        }
+
+        /** Check if amount is greater than 500 for electricity */
+        if ($request->serviceID === 'electricity' && $amount <= 500) {
+            return response()->json(['message' => 'Minimum amount for electricity is 500.'], 400);
         }
 
         /** Unique payment reference for each transaction */
@@ -385,21 +396,20 @@ class MullaBillController extends Controller
             ]);
         }
 
-        /** Validate minimum amount for electricity */
-        if ($request->serviceID === 'electricity') {
-            if ($amount < 500) {
-                return response(['message' => 'Minimum amount is 500.'], 400);
-            }
-        }
-
         /** Validate recipient if airtime or data */
         if ($this->isAirtime($request->serviceID)) {
             $request->validate([
                 'recipient' => 'required|digits:11',
             ]);
 
-            if ($amount < 50) {
-                return response(['message' => 'Minimum amount is 50.'], 400);
+            /** Check if recipient is 11 digits */
+            if (strlen($request->recipient) !== 11) {
+                return response()->json(['message' => 'Invalid recipient number.'], 400);
+            }
+
+            /** Check if amount is greater than 50 */
+            if ($amount <= 50) {
+                return response()->json(['message' => 'Minimum amount for airtime is 50.'], 400);
             }
 
             MullaUserAirtimeNumbers::updateOrCreate([
@@ -415,10 +425,6 @@ class MullaBillController extends Controller
             $request->validate([
                 'recipient' => 'required',
             ]);
-
-            if ($amount < 50) {
-                return response(['message' => 'Minimum amount is 50.'], 400);
-            }
 
             MullaUserInternetDataNumbers::updateOrCreate([
                 'phone_number' => $request->recipient,
