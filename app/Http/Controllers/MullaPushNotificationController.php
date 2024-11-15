@@ -56,30 +56,37 @@ class MullaPushNotificationController extends Controller
             'body',
         ]);
 
-        $fcmTokens = User::whereNotNull('fcm_token')->limit(99)->pluck('fcm_token')->toArray();
+        $totalUsers = User::whereNotNull('fcm_token')->count();
         $counter = 0;
         $totalSent = 0;
 
-        while (count($fcmTokens) > 0) {
-            $data = array_map(function ($token) use ($data) {
+        while ($counter < $totalUsers) {
+            // Get tokens in batches of 99
+            $fcmTokens = User::whereNotNull('fcm_token')
+                ->skip($counter)
+                ->limit(99)
+                ->pluck('fcm_token')
+                ->toArray();
+
+            if (empty($fcmTokens)) {
+                break;
+            }
+
+            // Prepare notification data for each token
+            $notifications = array_map(function ($token) use ($data) {
                 return [
                     'to' => $token,
                     'title' => $data['title'],
                     'body' => $data['body'],
                 ];
             }, $fcmTokens);
-
+            
+            // Send notifications for this batch
             $notification = new PushNotification();
-            $notification->send($data);
+            $notification->send($notifications);
 
-            $counter += 99;
             $totalSent += count($fcmTokens);
-
-            if ($counter >= User::whereNotNull('fcm_token')->count()) {
-                break;
-            }
-
-            $fcmTokens = User::whereNotNull('fcm_token')->skip($counter)->limit(99)->pluck('fcm_token')->toArray();
+            $counter += 99;
         }
 
         return response()->json([

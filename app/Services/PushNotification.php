@@ -2,18 +2,22 @@
 
 namespace App\Services;
 
+use App\Jobs\PushNotificationJob;
 use Illuminate\Support\Facades\Http;
 
 class PushNotification
 {
     public function send($data)
     {
-        Http::post('https://exp.host/--/api/v2/push/send', [
-            "to" => $data['to'],
-            "title" => $data['title'],
-            "body" => $data['body'],
-            "badge" => 1,
-            // "channelId" => 'default',
-        ]);
+        // if (is_array($data)) {
+        //     $data = array_map(function ($item) {
+        //         $item['badge'] = 1;
+        //         $item['channelId'] = 'default';
+        //         $item['sound'] = 'default';
+        //         return $item;
+        //     }, $data);
+        // }
+
+        PushNotificationJob::dispatch($data);
     }
 }
