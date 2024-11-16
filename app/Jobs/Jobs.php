@@ -110,7 +110,7 @@ class Jobs implements ShouldQueue
             MullaUserIPDetailsModel::updateOrCreate([
                 'user_id' => User::where('email', $this->data['email'])->value('id'),
                 'ip' => $this->data['ip'],
-            ],[
+            ], [
                 'browser' => $this->data['browser'],
                 'platform' => $this->data['platform'],
                 'location' =>  $info['location']['city'] . ', ' . $info['location']['country'] . ', ' . $info['location']['latitude'] . ', ' . $info['location']['longitude'],
@@ -118,14 +118,15 @@ class Jobs implements ShouldQueue
         }
 
         if ($this->data['type'] === 'fund_wallet') {
-            // Send a push notification
             $pt = new PushNotification();
 
-            $pt->send([
-                'to' => User::where('email', $this->data['email'])->value('fcm_token'),
-                'title' => 'Mulla',
-                'body' => 'Your account just got funded with ' . number_format($this->data['amount'], 2) . ' NGN.'
-            ]);
+            if ($fcmToken = User::where('email', $this->data['email'])->value('fcm_token')) {
+                $pt->send([
+                    'to' => $fcmToken,
+                    'title' => 'Mulla',
+                    'body' => 'Your account just got funded with ' . number_format($this->data['amount'], 2) . ' NGN.'
+                ]);
+            }
 
             $customerIO = new CustomerIoService();
             $customerIO->trackEvent($this->data, 'fund_wallet');
@@ -142,11 +143,13 @@ class Jobs implements ShouldQueue
         if ($this->data['type'] === 'transaction_successful') {
             $pt = new PushNotification();
 
-            $pt->send([
-                'to' => User::where('email', $this->data['email'])->value('fcm_token'),
-                'title' => 'Mulla',
-                'body' => 'Your ' . $this->data['utility'] . 'Purchase was successful.'
-            ]);
+            if ($fcmToken = User::where('email', $this->data['email'])->value('fcm_token')) {
+                $pt->send([
+                    'to' => $fcmToken,
+                    'title' => 'Mulla',
+                    'body' => 'Your ' . $this->data['utility'] . 'Purchase was successful.'
+                ]);
+            }
 
             $customerIO = new CustomerIoService();
 
