@@ -32,8 +32,8 @@ use Illuminate\Support\Facades\Route;
 
 /////////////////////////////// COMET //////////////////////////////
 Route::post('/comet/auth', [MullaAuthController::class, 'login']);
-// Route::post('/comet/auth/register', [MullaAuthController::class, 'register']);
-// Route::post('/comet/auth/verify', [MullaAuthController::class, 'registrationToken']);
+Route::post('/comet/auth/register/web', [MullaAuthController::class, 'register']);
+Route::post('/comet/auth/verify/web', [MullaAuthController::class, 'registrationToken']);
 Route::post('/comet/auth/verify', function (Request $request) {
     return response(['message' => 'New account registration temporarily suspended, please check back later.'], 400);
 });
@@ -92,6 +92,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->group(function () {
             Route::post('/comet/bill/pay', [MullaBillController::class, 'payVTPassBill']);
             Route::post('/comet/wallet/pay', [WalletController::class, 'payWithWallet']);
+            Route::post('/comet/bill/requery/{id}', [MullaBillController::class, 'requeryVTPassBill']);
         });
 
     // Wallet
@@ -120,7 +121,6 @@ Route::middleware('auth:business')->group(function () {
     Route::post('/business/bulktransfer/alpha/{listId}', [MullaBusinessBulkTransferController::class, 'initiateBulkTransferAlpha']);
     Route::get('/business/bulktransfer/alpha', [MullaBusinessBulkTransferController::class, 'getBulkTransferAlpha']);
     Route::get('/business/bulktransfer/alpha/transactions/{id}', [MullaBusinessBulkTransferController::class, 'getBulkTransferTransactions']);
-
 
     Route::post('/business/bt/transaction', [MullaBusinessBulkTransferController::class, 'createBTTransaction']);
     Route::get('/business/bt/transaction/{id}', [MullaBusinessBulkTransferController::class, 'getBTBusinessTransactions']);
