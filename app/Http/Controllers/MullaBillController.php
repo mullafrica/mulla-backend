@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\BaseUrls;
 use App\Enums\Cashbacks;
+use App\Enums\VTPEnums;
 use App\Jobs\DiscordBots;
 use App\Jobs\Jobs;
 use App\Models\MullaUserAirtimeNumbers;
@@ -239,7 +240,7 @@ class MullaBillController extends Controller
                 }, $data['content']);
 
                 // Filter out foreign-airtime
-                $mappedContent = array_filter($mappedContent, function($service) {
+                $mappedContent = array_filter($mappedContent, function ($service) {
                     return $service['id'] !== 'foreign-airtime';
                 });
 
@@ -362,6 +363,8 @@ class MullaBillController extends Controller
 
     public function payVTPassBill(Request $request, WalletService $ws)
     {
+        return response()->json(['message' => 'We are processing your transaction, please wait a moment.', 'pending' => true], 200);
+
         $request_id = $this->generateRequestId();
 
         $request->validate([
@@ -380,8 +383,8 @@ class MullaBillController extends Controller
         }
 
         /** Check if amount is greater than 500 for electricity */
-        if ($request->serviceID === 'electricity' && $amount <= 500) {
-            return response()->json(['message' => 'Minimum amount for electricity is 500.'], 400);
+        if ($this->isElectricity($request->serviceID) && $amount < 1000) {
+            return response()->json(['message' => 'Minimum amount for electricity is 1000.'], 400);
         }
 
         /** Unique payment reference for each transaction */
@@ -518,6 +521,8 @@ class MullaBillController extends Controller
                     'type' => $res->content->transactions->type ?? '',
                     'voucher_code' => $res->cards[0]->pin ?? '',
                     'voucher_serial' => $res->cards[0]->serialNumber ?? '',
+                    'vtp_request_id' => $res->requestId,
+                    'vtp_status' => VTPEnums::SUCCESS,
                     'status' => true,
                 ]
             );
@@ -542,9 +547,10 @@ class MullaBillController extends Controller
             ]);
 
             return response()->json($txn, 200);
-        } else {
-            if ($this->isAirtime($request->serviceID)) return;
-            if ($this->isData($request->serviceID)) return;
+        } else if ($res->content->transactions->status === 'pending' || $res->response_description === 'TRANSACTION PROCESSING - PENDING') {
+
+            // if ($this->isAirtime($request->serviceID)) return;
+            // if ($this->isData($request->serviceID)) return;
 
             MullaUserTransactions::updateOrCreate(
                 [
@@ -557,11 +563,19 @@ class MullaBillController extends Controller
                     'amount' => $amount,
                     'bill_device_id' => $res->content->transactions->unique_element,
                     'type' => $res->content->transactions->type,
-                    'status' => true,
+                    'status' => false,
+                    'vtp_request_id' => $res->requestId,
+                    'vtp_status' => VTPEnums::PENDING,
                 ]
             );
 
-            return response()->json(['message' => 'Service not available at the moment.'], 400);
+            return response()->json(['message' => 'We are processing your transaction, please wait a moment.', 'pending' => true], 200);
+        } else {
+            /**
+             * We are assuming the transaction failed here, nothing
+             * should be getting stored.
+             */
+            return response()->json(['message' => 'Service not available at the moment, please try again later.'], 400);
         }
 
         return response()->json(['message' => 'An error occured, please contact support.'], 400);
@@ -581,6 +595,14 @@ class MullaBillController extends Controller
     private function isAirtime($value)
     {
         if ($value === 'glo' || $value === 'mtn' || $value === 'airtel' || $value === 'foreign-airtime' || $value === 'etisalat') {
+            return true;
+        }
+        return false;
+    }
+
+    private function isElectricity($value)
+    {
+        if ($value === 'abuja-electric' || $value === 'eko-electric' || $value === 'ibadan-electric' || $value === 'ikeja-electric' || $value === 'jos-electric' || $value === 'kaduna-electric' || $value === 'kano-electric' || $value === 'portharcourt-electric' || $value === 'enugu-electric' || $value === 'benin-electric' || $value === 'aba-electric' || $value === 'yola-electric') {
             return true;
         }
         return false;
@@ -613,5 +635,88 @@ class MullaBillController extends Controller
         }
 
         return 0.5 / Cashbacks::DIVISOR;
+    }
+
+    public function payVTPassBillMobile() {}
+
+    public function requeryVTPassBill($id)
+    {
+        if (!$txn = MullaUserTransactions::find($id)) {
+            return response()->json(['message' => 'Transaction not found'], 400);
+        }
+
+        if ($txn->vtp_status === VTPEnums::SUCCESS) {
+            return response()->json(['message' => 'Transaction already processed succefully.'], 400);
+        }
+
+        $pay = Http::withHeaders([
+            'api-key' => env('VTPASS_API_KEY'),
+            'secret-key' => env('VTPASS_SEC_KEY')
+        ])->withOptions([
+            'timeout' => 120,
+        ])->post($this->vtp_endpoint() . 'requery', [
+            'request_id' => $txn->vtp_request_id,
+        ]);
+
+        if (!$pay->successful()) {
+            return response()->json(['message' => 'An error occured, please try again.'], 400);
+        }
+
+        $res = $pay->object();
+
+        if ($res->code === '000' && $res->response_description === 'TRANSACTION SUCCESSFUL') {
+            $txn = MullaUserTransactions::updateOrCreate(
+                [
+                    'user_id' => Auth::id(),
+                    'payment_reference' => $txn->payment_reference
+                ],
+                [
+                    'bill_reference' => $res->content->transactions->transactionId,
+
+                    'unique_element' => $res->content->transactions->unique_element ?? '',
+                    'product_name' => $res->content->transactions->product_name ?? '',
+
+                    'cashback' => $txn->cashback,
+                    'amount' => $txn->amount,
+                    'vat' => $res->Tax ?? $res->mainTokenTax ?? 0,
+                    'bill_token' => $res->Reference ?? $res->token ?? $res->Token ?? $res->mainToken ?? '',
+                    'bill_units' => $res->Units ?? $res->units ?? $res->mainTokenUnits ?? '',
+                    'bill_device_id' => $res->content->transactions->unique_element ?? '',
+                    'type' => $res->content->transactions->type ?? '',
+                    'voucher_code' => $res->cards[0]->pin ?? '',
+                    'voucher_serial' => $res->cards[0]->serialNumber ?? '',
+                    'vtp_request_id' => $res->requestId,
+                    'vtp_status' => VTPEnums::SUCCESS,
+                    'status' => true,
+                ]
+            );
+
+            Jobs::dispatch([
+                'type' => 'transaction_successful',
+                'email' => Auth::user()->email,
+                'firstname' => Auth::user()->firstname,
+                'transfer' => '',
+                'utility' => $txn->product_name,
+                'amount' => $txn->amount,
+                'date' => $txn->date ?? now()->format('D dS M \a\t h:i A'),
+                'cashback' => $txn->cashback,
+                'code' => $txn->voucher_code ?? '',
+                'serial' => '',
+                'units'  => $txn->bill_units ?? '',
+                'device_id' => $txn->bill_device_id ?? '',
+                'token' => $txn->bill_token ?? '',
+                'txn_type' => $txn->type ?? '',
+                'transaction_reference' => $txn->payment_reference,
+                'created_at' => Carbon::now()->toDateTimeString(),
+            ]);
+
+            return response($txn, 200);
+        } else if ($res->code === '040' && $res->content->transactions->status === 'reversed') {
+            return response(['message' => 'Transaction reversed, please contact support to get a refund.'], 400);
+        } else if ($res->code === '099' && $res->response_description === 'TRANSACTION PROCESSING - PENDING') {
+            return response(['message' => 'Transaction still processing. Please wait a few minutes and try again.'], 400);
+        } else {
+            return response(['message' => 'Transaction failed. Please try again.'], 400);
+        }
     }
 }
