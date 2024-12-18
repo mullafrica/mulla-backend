@@ -363,8 +363,6 @@ class MullaBillController extends Controller
 
     public function payVTPassBill(Request $request, WalletService $ws)
     {
-        return response()->json(['message' => 'We are processing your transaction, please wait a moment.', 'pending' => true], 200);
-
         $request_id = $this->generateRequestId();
 
         $request->validate([
