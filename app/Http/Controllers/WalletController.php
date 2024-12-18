@@ -49,7 +49,7 @@ class WalletController extends Controller
 
     public function payWithWallet(Request $request, WalletService $ws) {
         $request->validate([
-            'amount' => 'required',
+            'amount' => 'required|numeric|min:50',
         ]);
 
         if ($ws->checkBalance($request->amount * BaseUrls::MULTIPLIER)) {
