@@ -35,11 +35,11 @@ class MullaTransactionsController extends Controller
 
     public function getUserTxns()
     {
-        return response()->json(MullaUserTransactions::where('user_id', Auth::id())->where('status', true)->orderBy('created_at', 'desc')->limit(5)->get(), 200);
+        return response()->json(MullaUserTransactions::where('user_id', Auth::id())->where('status', true)->orWhere('vtp_status', 2)->orderBy('created_at', 'desc')->limit(5)->get(), 200);
     }
 
     public function getAllUserTxns()
     {
-        return response()->json(MullaUserTransactions::where('user_id', Auth::id())->where('status', true)->orderBy('created_at', 'desc')->get(), 200);
+        return response()->json(MullaUserTransactions::where('user_id', Auth::id())->where('status', true)->orWhere('vtp_status', 2)->orderBy('created_at', 'desc')->get(), 200);
     }
 }
