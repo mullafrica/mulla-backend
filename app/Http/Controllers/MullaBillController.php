@@ -647,6 +647,10 @@ class MullaBillController extends Controller
             return response()->json(['message' => 'Transaction already processed succefully.'], 400);
         }
 
+        if ($txn->vtp_status === VTPEnums::REVERSED) {
+            return response()->json(['message' => 'Transaction has been reversed.'], 400);
+        }
+
         $pay = Http::withHeaders([
             'api-key' => env('VTPASS_API_KEY'),
             'secret-key' => env('VTPASS_SEC_KEY')
@@ -710,8 +714,10 @@ class MullaBillController extends Controller
 
             return response($txn, 200);
         } else if ($res->code === '040' && $res->content->transactions->status === 'reversed') {
-            DiscordBots::dispatch(['message' => 'Transaction - ' . $res->content->transactions->type ?? '' . ' - has been reversed, check and refund user with (ID:' . Auth::id() . ')']);
-            return response(['message' => 'Transaction reversed, please contact support to get a refund.'], 400);
+            DiscordBots::dispatch(['message' => 'Transaction - ' . $res->content->transactions->type . ' - has been reversed, user has been refunded (ID:' . Auth::id() . ')']);
+            MullaUserTransactions::where('id', $txn->id)->update(['vtp_status' => VTPEnums::REVERSED]);
+            MullaUserWallets::where('user_id', Auth::id())->increment('balance', $txn->amount);
+            return response(['message' => 'Transaction reversed.'], 400);
         } else if ($res->code === '099' && $res->response_description === 'TRANSACTION PROCESSING - PENDING') {
             return response(['message' => 'Transaction still processing. Please wait a few minutes and try again.'], 400);
         } else {
