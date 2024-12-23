@@ -710,6 +710,7 @@ class MullaBillController extends Controller
 
             return response($txn, 200);
         } else if ($res->code === '040' && $res->content->transactions->status === 'reversed') {
+            DiscordBots::dispatch(['message' => 'Transaction - ' . $res->content->transactions->type ?? '' . ' - has been reversed, check and refund user with (ID:' . Auth::id() . ')']);
             return response(['message' => 'Transaction reversed, please contact support to get a refund.'], 400);
         } else if ($res->code === '099' && $res->response_description === 'TRANSACTION PROCESSING - PENDING') {
             return response(['message' => 'Transaction still processing. Please wait a few minutes and try again.'], 400);
