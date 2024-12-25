@@ -666,7 +666,7 @@ class MullaBillController extends Controller
 
         $res = $pay->object();
 
-        if ($res->code === '000' && $res->response_description === 'TRANSACTION SUCCESSFUL') {
+        if ($res->code === '000' && $res->response_description === 'TRANSACTION SUCCESSFUL' && $res->Token) {
             $txn = MullaUserTransactions::updateOrCreate(
                 [
                     'user_id' => Auth::id(),
