@@ -68,6 +68,8 @@ Route::middleware('auth:sanctum')->group(function () {
         return true;
     });
 
+    Route::get('/comet/bundled', [MullaStatsController::class, 'getAllMetrics']);
+
     Route::get('/comet/supported/ops', [MullaBillController::class, 'getVTPassOperatorProducts']);
     Route::get('/comet/supported/ops/variation', [MullaBillController::class, 'getVTPassOperatorProductVariation']);
 
