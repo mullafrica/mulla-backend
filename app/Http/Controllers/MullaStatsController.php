@@ -104,6 +104,7 @@ class MullaStatsController extends Controller
             ->whereNotNull('type')
             ->where('type', '!=', 'Deposit')
             ->where('type', '!=', 'Bank Transfer')
+            ->whereYear('created_at', 2024)
             ->sum('amount');
     }
 
@@ -119,6 +120,7 @@ class MullaStatsController extends Controller
         return MullaUserTransactions::where('user_id', $userId)
             ->where('status', 1)
             ->where('type', 'Electricity Bill')
+            ->whereYear('created_at', 2024)
             ->count() * 100;
     }
 
@@ -131,6 +133,7 @@ class MullaStatsController extends Controller
             ->where('type', '!=', 'Deposit')
             ->select('type', DB::raw('SUM(amount) as total_amount'))
             ->groupBy('type')
+            ->whereYear('created_at', 2024)
             ->get();
 
         $totalSpent = $transactions->sum('total_amount');
@@ -155,6 +158,7 @@ class MullaStatsController extends Controller
             ->where('status', 1)
             ->select('type', DB::raw('COUNT(*) as type_count'))
             ->groupBy('type')
+            ->whereYear('created_at', 2024)
             ->orderByDesc('type_count')
             ->first()
             ?->type;
@@ -166,6 +170,7 @@ class MullaStatsController extends Controller
             ->where('status', 1)
             ->select('type', 'amount', 'created_at')
             ->orderByDesc('amount')
+            ->whereYear('created_at', 2024)
             ->first();
 
         if (!$transaction) {
@@ -184,10 +189,11 @@ class MullaStatsController extends Controller
     {
         // First, get all users' total spend
         $allUsersSpend = MullaUserTransactions::where('status', 1)
-        ->select('user_id', DB::raw('SUM(amount) as total_spent'))
-        ->groupBy('user_id')
-        ->orderByDesc('total_spent')
-        ->get();
+            ->select('user_id', DB::raw('SUM(amount) as total_spent'))
+            ->groupBy('user_id')
+            ->orderByDesc('total_spent')
+            ->whereYear('created_at', 2024)
+            ->get();
 
         // Get current user's total spend
         $userSpend = $allUsersSpend->firstWhere('user_id', $userId)?->total_spent ?? 0;
@@ -206,16 +212,17 @@ class MullaStatsController extends Controller
     public function getTopUsersByVolume(int $limit = 10): array
     {
         return MullaUserTransactions::where('status', 1)
-        ->whereNotNull('type')
-        ->where('type', '!=', 'Deposit')
-        ->select(
-            'user_id',
-            DB::raw('COUNT(*) as transaction_count'),
-            DB::raw('SUM(amount) as total_amount')
-        )
-        ->groupBy('user_id')
-        ->orderByDesc('transaction_count')
-        ->limit($limit)
+            ->whereNotNull('type')
+            ->where('type', '!=', 'Deposit')
+            ->whereYear('created_at', 2024)
+            ->select(
+                'user_id',
+                DB::raw('COUNT(*) as transaction_count'),
+                DB::raw('SUM(amount) as total_amount')
+            )
+            ->groupBy('user_id')
+            ->orderByDesc('transaction_count')
+            ->limit($limit)
             ->get()
             ->map(function ($transaction) {
                 return [
