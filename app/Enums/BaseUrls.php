@@ -12,6 +12,6 @@ class BaseUrls
 
     public static function getBank()
     {
-        return config('app.env') === 'local' ? 'test-bank' : 'wema-bank';
+        return config('app.env') === 'local' ? 'test-bank' : 'titan-paystack';
     }
 }
