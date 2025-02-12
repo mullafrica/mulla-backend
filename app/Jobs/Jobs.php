@@ -46,17 +46,24 @@ class Jobs implements ShouldQueue
      */
     public function handle(VirtualAccount $va): void
     {
-        /**
-         * 
-         * 
-         * 1 -> Add to CustomerIo
-         * 2 -> Create Wallet [disable]
-         * 3 -> Create Cashback Wallet [disable]
-         * 4 -> Create Paystack Customer [disable]
-         * 5 -> Create DVA [disable]
-         * 7 -> Send Email
-         * 
-         */
+        if ($this->data['type'] === 'validate_bvn') {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . env('MULLA_PAYSTACK_LIVE'),
+            ])
+                ->post('https://api.paystack.co/customer/' . $this->data['pt'] . '/identification', [
+                    'first_name' => $this->data['firstname'],
+                    'last_name' => $this->data['lastname'],
+                    'country' => 'NG',
+                    'type' => 'bank_account',
+                    'account_number' => $this->data['nuban'],
+                    'bvn' => $this->data['bvn'],
+                    'bank_code' => $this->data['bank_code'],
+                ]);
+
+            $this->sendToDiscord('BVN validation in progress.' . ' (ID:' . $this->data['firstname'] . ' ' . $this->data['lastname'] . ' (pt->' . json_encode($response->json()) . ')');
+        }
+
         if ($this->data['type'] === 'create_account') {
             // 7 -> Send Email
             $email = new MullaWelcomeEmail($this->data);

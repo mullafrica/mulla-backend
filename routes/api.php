@@ -33,19 +33,22 @@ use Illuminate\Support\Facades\Route;
 /////////////////////////////// COMET //////////////////////////////
 Route::post('/comet/auth', [MullaAuthController::class, 'login']);
 
-Route::post('/comet/auth/register/web', [MullaAuthController::class, 'register']);
-// Route::post('/comet/auth/verify/web', [MullaAuthController::class, 'registrationToken']);
+Route::post('/comet/auth/register/web', [MullaAuthController::class, 'registerWebUpdated']);
+Route::post('/comet/auth/verify/web', [MullaAuthController::class, 'registrationToken']);
+Route::post('/comet/auth/token/phone', [MullaAuthController::class, 'sendVerificationCodeToWhatsapp']);
+Route::post('/comet/auth/verify/phone', [MullaAuthController::class, 'verifyVerificationCodeFromWhatsapp']);
+Route::post('/comet/auth/resolve/bank', [MullaAuthController::class, 'resolveBankAccount']);
 
 // Route::post('/comet/auth/verify', [MullaAuthController::class, 'registrationToken']);
 Route::post('/comet/auth/register', [MullaAuthController::class, 'register']);
 
-Route::post('/comet/auth/verify/web', function (Request $request) {
-    return response(['message' => 'New account registration temporarily suspended, please check back later.'], 400);
-});
+// Route::post('/comet/auth/verify/web', function (Request $request) {
+//     return response(['message' => 'New account registration temporarily suspended, please check back later.'], 400);
+// });
 
-Route::post('/comet/auth/verify', function (Request $request) {
-    return response(['message' => 'New account registration temporarily suspended, please check back later.'], 400);
-});
+// Route::post('/comet/auth/verify', function (Request $request) {
+//     return response(['message' => 'New account registration temporarily suspended, please check back later.'], 400);
+// });
 
 Route::post('/comet/auth/token', [MullaAuthController::class, 'sendToken']);
 Route::post('/comet/auth/password/reset', [MullaAuthController::class, 'resetPassword']);
@@ -98,13 +101,6 @@ Route::middleware('auth:sanctum')->group(function () {
         [MullaBillController::class, 'getOperatorProducts']
     );
 
-    Route::middleware(['throttle:4,1']) // 1 request per minute
-        ->group(function () {
-            Route::post('/comet/bill/pay', [MullaBillController::class, 'payVTPassBill']);
-            Route::post('/comet/wallet/pay', [WalletController::class, 'payWithWallet']);
-            Route::post('/comet/bill/requery/{id}', [MullaBillController::class, 'requeryVTPassBill']);
-        });
-
     // Wallet
     Route::get('/comet/wallet/dva', [WalletController::class, 'getVirtualAccount']);
 
@@ -113,7 +109,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/comet/transfer/beneficiaries', [MullaTransferController::class, 'getBeneficiaries']);
     Route::post('/comet/transfer/beneficiaries', [MullaTransferController::class, 'saveBeneficiaries']);
     Route::post('/comet/transfer/beneficiary/validate', [MullaTransferController::class, 'validateAccount']);
-    Route::post('/comet/transfer', [MullaTransferController::class, 'completeTransfer']);
 
     // Stats
     Route::get('/comet/account/stats', [MullaStatsController::class, 'getStats']);
@@ -121,6 +116,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/comet/push/notification', [MullaPushNotificationController::class, 'sendNotification']);
     Route::post('/comet/push/notification/all', [MullaPushNotificationController::class, 'sendNotificationToAll']);
+});
+
+Route::middleware(['auth:sanctum', 'checkUserStatus'])->group(function () {
+    Route::middleware(['throttle:4,1']) // 1 request per minute
+        ->group(function () {
+            Route::post('/comet/bill/pay', [MullaBillController::class, 'payVTPassBill']);
+            Route::post('/comet/wallet/pay', [WalletController::class, 'payWithWallet']);
+            Route::post('/comet/bill/requery/{id}', [MullaBillController::class, 'requeryVTPassBill']);
+        });
+
+    // Transfer
+    Route::post('/comet/transfer', [MullaTransferController::class, 'completeTransfer']);
 });
 
 

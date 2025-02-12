@@ -9,6 +9,7 @@ use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserWallets;
 use App\Models\User;
 use App\Models\VerifyEmailToken;
+use App\Models\VerifyPhoneTokenModel;
 use App\Services\CustomerIoService;
 use App\Services\VirtualAccount;
 use App\Traits\Reusables;
@@ -94,6 +95,8 @@ class MullaAuthController extends Controller
             'token' => Str::upper($this->uuid_ag2()),
         ]);
 
+        // Validate phone number instead
+
         Jobs::dispatch([
             'type' => 'verify_email',
             'token' => $vt->token,
@@ -177,6 +180,76 @@ class MullaAuthController extends Controller
         ]);
 
         $this->sendToDiscord($user->firstname . ', ' . $user->email . ' just created an account!');
+
+        return response()->json([
+            'message' => 'User created successfully.',
+            'user' => $user,
+            'token' => $user->createToken($request->phone, ['*'], now()->addMinutes(config('sanctum.expiration')))->plainTextToken
+        ], 200);
+    }
+
+    public function registerWebUpdated(Request $request, VirtualAccount $va)
+    {
+        $browser = Browser::browserFamily();
+        $platform = Browser::platformName();
+        
+        $request->validate([
+            'token' => 'required',
+            'firstname' => 'required',
+            'lastname' => 'required',
+            'password' => 'required',
+            'email' => 'required',
+            'phone' => 'required',
+            'bvn' => 'required',
+            'nuban' => 'required',
+            'bank_code' => 'required',
+        ]);
+
+        $user = User::create([
+            'firstname' => $request->firstname,
+            'lastname' => $request->lastname,
+            'phone' => $request->phone,
+            'password' => Hash::make($request->password),
+            'email' => $request->email ? $request->email : null,
+        ]);
+
+        // 2 -> Create Wallet
+        MullaUserWallets::updateOrCreate([
+            'user_id' => $user->id,
+        ]);
+
+        // 3 -> Create Cashback Wallet
+        MullaUserCashbackWallets::updateOrCreate([
+            'user_id' => $user->id,
+        ]);
+
+        // 4 -> Create Paystack Customer
+        $pt = $va->createCustomer([
+            'user_id' => $user->id,
+            'email' => $request->email,
+            'firstname' => $request->firstname,
+            'lastname' => $request->lastname,
+            'phone' => $request->phone,
+        ]);
+
+        Jobs::dispatch([
+            'type' => 'validate_bvn',
+            'user_id' => $user->id,
+            'firstname' => $request->firstname,
+            'lastname' => $request->lastname,
+            'phone' => $request->phone,
+            'email' => $request->email,
+            'created_at' => Carbon::now()->toDateTimeString(),
+            'ip' => request()->ip(),
+            'browser' =>  $browser,
+            'platform' => $platform,
+            'pt' => $pt->data->customer_code,
+            'nuban' => $request->nuban,
+            'bvn' => $request->bvn,
+            'bank_code' => $request->bank_code,
+        ]);
+
+        $this->sendToDiscord($user->firstname . ', ' . $user->email . ' just created an account and is being verified!');
 
         return response()->json([
             'message' => 'User created successfully.',
@@ -283,7 +356,8 @@ class MullaAuthController extends Controller
         ], 200);
     }
 
-    public function updateFcm(Request $request) {
+    public function updateFcm(Request $request)
+    {
         $request->validate([
             'token' => 'required'
         ]);
@@ -296,6 +370,101 @@ class MullaAuthController extends Controller
             return response([
                 'message' => 'FCM token updated successfully.'
             ], 200);
+        }
+    }
+
+    public function sendVerificationCodeToWhatsapp(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|numeric|digits:11|unique:users,phone',
+            'email' => 'email|unique:users,email'
+        ]);
+
+        $token = strtoupper($this->uuid_ag());
+
+        if (str_starts_with($request->phone, '0')) {
+            $modifiedNumber = '234' . substr($request->phone, 1);
+        } else {
+            $modifiedNumber = '234' . $request->phone;
+        }
+
+        $res = Http::withHeaders([
+            "Authorization" => "App 0e36daa38a3f656b702dfbc5a13f5a73-89b9411a-3a66-4110-8771-3e546a13c2a0",
+            "Content-Type" => "application/json",
+            "Accept" => "application/json",
+        ])->post('https://4e3x4m.api.infobip.com/whatsapp/1/message/template', [
+            'messages' => [
+                [
+                    'from'      => '254748067849',
+                    'to'        => $modifiedNumber,
+                    'messageId' => $this->uuid16(),
+                    'content'   => [
+                        'templateName' => 'verification_code',
+                        'templateData' => [
+                            'body' => ['placeholders' => [$token]],
+                            'buttons' => [['type' => 'URL', 'parameter' => $token]],
+                        ],
+                        'language' => 'en_GB',
+                    ],
+                ],
+            ],
+        ]);
+
+        if ($res->successful()) {
+            VerifyPhoneTokenModel::updateOrCreate([
+                'phone' => $request->phone,
+            ], [
+                'token' => $token,
+            ]);
+
+            return response()->json([
+                'message' => 'Verification code sent successfully.',
+                'token' => $res->json()
+            ], 200);
+        } 
+
+        return response()->json([
+            'message' => 'Something went wrong. Please try again later.',
+        ], 400);
+    }
+
+    public function verifyVerificationCodeFromWhatsapp(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|numeric|digits:11',
+            'token' => 'required|max:6',
+        ]);
+
+        if (!$token = VerifyPhoneTokenModel::where('token', $request->token)->where('phone', $request->phone)->first()) {
+            return response()->json([
+                'message' => 'Invalid verification code.'
+            ], 400);
+        }
+
+        $token->delete();
+
+        return response()->json([
+            'message' => 'Phone verified successfully.'
+        ], 200);
+    }
+
+    public function resolveBankAccount(Request $request)
+    {
+        $request->validate([
+            'nuban' => 'required|numeric|digits:10',
+            'bank_code' => 'required|numeric',
+        ]);
+
+        $res = Http::withToken(env('MULLA_PAYSTACK_LIVE'))->get('https://api.paystack.co/bank/resolve?account_number=' . $request->nuban . '&bank_code=' . $request->bank_code);
+
+        if ($res->successful()) {
+            return response()->json([
+                'data' => $res->json()['data']
+            ], 200);
+        } else {
+            return response()->json([
+                'message' => $res->json()['message'],
+            ], 400);
         }
     }
 }

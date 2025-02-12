@@ -8,6 +8,7 @@ use App\Models\CustomerVirtualAccountsModel;
 use App\Models\MullaUserTransactions;
 use App\Models\MullaUserWallets;
 use App\Models\User;
+use App\Services\VirtualAccount;
 use App\Traits\Reusables;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
@@ -33,7 +34,7 @@ class WebhookJobs implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(VirtualAccount $va): void
     {
         // Add transfer to customer wallet
         if ($this->data['event'] === 'charge.success' && $this->data['data']['channel'] === 'dedicated_nuban') {
@@ -89,11 +90,44 @@ class WebhookJobs implements ShouldQueue
                     'bank_code' => $this->data['data']['details']['bank_code'] ?? $item->bank_code,
                     'bank_name' => $this->data['data']['details']['bank_name'] ?? $item->bank_name
                 ]);
-            }            
+            }
 
             // Mulla User (What to do here?)
-            
+
             DiscordBots::dispatch(['message' => 'Mulla TRF/SUCCESS - ' . json_encode($this->data['data'])]);
+        }
+
+        /**
+         * 
+         * BVN Customer Verification & DVA Creation
+         * 
+         */
+        if ($this->data['event'] === 'customeridentification.success') {
+
+            $this->sendToDiscord('Creating DVA for customer.');
+
+            $cvam = CustomerVirtualAccountsModel::where('customer_id', $this->data['data']['customer_code'])->first();
+
+            if (!$cvam) {
+                return;
+            }
+
+            $user = User::find($cvam->user_id);
+
+            $va->createVirtualAccount((object)[
+                'data' => (object)[
+                    'customer_code' => $this->data['data']['customer_code'],
+                ],
+            ], [
+                'user_id' => $cvam->user_id,
+                'firstname' => $user->firstname,
+                'lastname' => $user->lastname,
+                'phone' => $user->phone,
+            ]);
+        }
+
+        if ($this->data['event'] === 'customeridentification.failed') {
+            $this->sendToDiscord('Customer identification failed. - ' . 'Reason: ' . json_encode($this->data));
         }
     }
 }
