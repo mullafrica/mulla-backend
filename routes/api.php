@@ -34,14 +34,14 @@ use Illuminate\Support\Facades\Route;
 Route::post('/comet/auth', [MullaAuthController::class, 'login']);
 
 Route::post('/comet/auth/register/web', [MullaAuthController::class, 'register']);
-// Route::post('/comet/auth/verify/web', [MullaAuthController::class, 'registrationToken']);
+Route::post('/comet/auth/verify/web', [MullaAuthController::class, 'registrationToken']);
 
 // Route::post('/comet/auth/verify', [MullaAuthController::class, 'registrationToken']);
 Route::post('/comet/auth/register', [MullaAuthController::class, 'register']);
 
-Route::post('/comet/auth/verify/web', function (Request $request) {
-    return response(['message' => 'New account registration temporarily suspended, please check back later.'], 400);
-});
+// Route::post('/comet/auth/verify/web', function (Request $request) {
+   // return response(['message' => 'New account registration temporarily suspended, please check back later.'], 400);
+// ));
 
 Route::post('/comet/auth/verify', function (Request $request) {
     return response(['message' => 'New account registration temporarily suspended, please check back later.'], 400);
