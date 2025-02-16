@@ -4,27 +4,31 @@ namespace App\Http\Controllers\Business;
 
 use App\Http\Controllers\Controller;
 use App\Models\Business\MullaBusinessAccountsModel;
+use App\Models\Business\MullaBusinessBankAccountsModel;
 use App\Services\VirtualAccount;
 use App\Traits\Reusables;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class MullaBusinessAuthController extends Controller
 {
     use Reusables;
-    
+
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+            "email" => "required|email",
+            "password" => "required",
         ]);
 
-        $user = MullaBusinessAccountsModel::where('email', $request->email)->first();
+        $user = MullaBusinessAccountsModel::where(
+            "email",
+            $request->email
+        )->first();
 
         if ($user) {
             if (Hash::check($request->password, $user->password)) {
-
                 // Jobs::dispatch([
                 //     'type' => 'login',
                 //     'email' => $user->email,
@@ -36,50 +40,64 @@ class MullaBusinessAuthController extends Controller
 
                 $token = $user->createToken($request->email)->plainTextToken;
 
-                return response()->json([
-                    'message' => 'Logged in.',
-                    'user' => $user,
-                    'token' => $token
-                ], 200);
+                return response()->json(
+                    [
+                        "message" => "Logged in.",
+                        "user" => $user,
+                        "token" => $token,
+                    ],
+                    200
+                );
             } else {
-                return response()->json([
-                    'message' => 'Incorrect password, try again.'
-                ], 401);
+                return response()->json(
+                    [
+                        "message" => "Incorrect password, try again.",
+                    ],
+                    401
+                );
             }
         } else {
-            return response()->json([
-                'message' => 'Account not found, please sign up first.'
-            ], 404);
+            return response()->json(
+                [
+                    "message" => "Account not found, please sign up first.",
+                ],
+                404
+            );
         }
     }
 
     public function register(Request $request, VirtualAccount $va)
     {
         $request->validate([
-            'access_code' => 'required',
-            'business_name' => 'required',
-            'rc_number' => 'required|unique:mulla_business_accounts_models,rc_number',
-            'firstname' => 'required',
-            'lastname' => 'required',
-            'phone' => 'required|unique:mulla_business_accounts_models,phone',
-            'email' => 'required|email|unique:mulla_business_accounts_models,email',
-            'password' => 'required|min:8',
+            "access_code" => "required",
+            "business_name" => "required",
+            "rc_number" =>
+                "required|unique:mulla_business_accounts_models,rc_number",
+            "firstname" => "required",
+            "lastname" => "required",
+            "phone" => "required|unique:mulla_business_accounts_models,phone",
+            "email" =>
+                "required|email|unique:mulla_business_accounts_models,email",
+            "password" => "required|min:8",
         ]);
 
-        if ($request->access_code !== 'mullabiz') {
-            return response()->json([
-                'message' => 'Access code is incorrect.'
-            ], 401);
+        if ($request->access_code !== "mullabiz") {
+            return response()->json(
+                [
+                    "message" => "Access code is incorrect.",
+                ],
+                401
+            );
         }
 
         $user = MullaBusinessAccountsModel::create([
-            'business_name' => $request->business_name,
-            'rc_number' => $request->rc_number,
-            'firstname' => $request->firstname,
-            'lastname' => $request->lastname,
-            'phone' => $request->phone,
-            'password' => Hash::make($request->password),
-            'email' => $request->email ? $request->email : null,
+            "business_name" => $request->business_name,
+            "rc_number" => $request->rc_number,
+            "firstname" => $request->firstname,
+            "lastname" => $request->lastname,
+            "phone" => $request->phone,
+            "password" => Hash::make($request->password),
+            "email" => $request->email ? $request->email : null,
         ]);
 
         // 2 -> Create Wallet
@@ -118,12 +136,28 @@ class MullaBusinessAuthController extends Controller
         //     'email' => $request->email ?? 'pikeconcept@gmail.com',
         // ]);
 
-        $this->sendToDiscord($user->firstname . ', ' . $user->email . ' just created a business account!');
+        $this->sendToDiscord(
+            $user->firstname .
+                ", " .
+                $user->email .
+                " just created a business account!"
+        );
 
-        return response()->json([
-            'message' => 'User created successfully.',
-            'user' => $user,
-            'token' => $user->createToken($request->email)->plainTextToken
-        ], 200);
+        return response()->json(
+            [
+                "message" => "User created successfully.",
+                "user" => $user,
+                "token" => $user->createToken($request->email)->plainTextToken,
+            ],
+            200
+        );
+    }
+
+    public function getBankAccount()
+    {
+        return MullaBusinessBankAccountsModel::where(
+            "business_id",
+            Auth::id()
+        )->first();
     }
 }
