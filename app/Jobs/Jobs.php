@@ -61,7 +61,14 @@ class Jobs implements ShouldQueue
                     'bank_code' => $this->data['bank_code'],
                 ]);
 
+
             $this->sendToDiscord('BVN validation in progress.' . ' (ID:' . $this->data['firstname'] . ' ' . $this->data['lastname'] . ' (pt->' . json_encode($response->json()) . ')');
+            $this->sendToDiscord('Internal name validation in progress.');
+
+            // Opay (999992), Palmpay (999991), MTN Momo (120003), Moniepoint (50515), fairmoney (51318)
+            // $this->checkAccount($this->data['phone'], $this->data['firstname'] . ' ' . $this->data['lastname']);
+
+
         }
 
         if ($this->data['type'] === 'create_account') {
@@ -180,5 +187,10 @@ class Jobs implements ShouldQueue
             //     $customerIO->trackEvent($this->data, 'cable_successful');
             // }
         }
+    }
+
+    public function checkAccount($message)
+    {
+        
     }
 }
