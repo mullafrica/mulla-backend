@@ -19,7 +19,7 @@ class CheckUserStatus
 
         // If the user exists but the status is false, block access.
         if ($user && !$user->status) {
-            return response()->json(['message' => 'Account inactive'], 400);
+            return response()->json(['message' => 'Account inactive, please contact support.'], 400);
         }
 
         return $next($request);
