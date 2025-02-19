@@ -39,6 +39,8 @@ Route::post('/comet/auth/token/phone', [MullaAuthController::class, 'sendVerific
 Route::post('/comet/auth/verify/phone', [MullaAuthController::class, 'verifyVerificationCodeFromWhatsapp']);
 Route::post('/comet/auth/resolve/bank', [MullaAuthController::class, 'resolveBankAccount']);
 
+Route::post('/comet/account/resolve', [MullaAuthController::class, 'resolveAccount']);
+
 // Route::post('/comet/auth/verify', [MullaAuthController::class, 'registrationToken']);
 Route::post('/comet/auth/register', [MullaAuthController::class, 'register']);
 
