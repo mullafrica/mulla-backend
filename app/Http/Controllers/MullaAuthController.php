@@ -8,8 +8,10 @@ use App\Models\ForgotPasswordTokens;
 use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserWallets;
 use App\Models\User;
+use App\Models\UserAltBankAccountsModel;
 use App\Models\VerifyEmailToken;
 use App\Models\VerifyPhoneTokenModel;
+use App\Services\ComplianceService;
 use App\Services\CustomerIoService;
 use App\Services\VirtualAccount;
 use App\Traits\Reusables;
@@ -25,6 +27,15 @@ use Illuminate\Support\Facades\Http;
 class MullaAuthController extends Controller
 {
     use UniqueId, Reusables;
+
+    public function resolveAccount(Request $request, ComplianceService $cs)
+    {        
+        return $cs->resolveAccount([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'account_number' => $request->phone,
+        ]);
+    }
 
     public function login(Request $request)
     {
@@ -203,6 +214,7 @@ class MullaAuthController extends Controller
             'bvn' => 'required',
             'nuban' => 'required',
             'bank_code' => 'required',
+            'bank_name' => 'required',
         ]);
 
         $user = User::create([
@@ -211,6 +223,16 @@ class MullaAuthController extends Controller
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'email' => $request->email ? $request->email : null,
+        ]);
+
+        UserAltBankAccountsModel::updateOrCreate([
+            'user_id' => $user->id,
+        ], [
+            'bvn' => $request->bvn,
+            'nuban' => $request->nuban,
+            'bank_code' => $request->bank_code,
+            'bank_name' => $request->bank_name,
+            'account_name' => $request->account_name,
         ]);
 
         // 2 -> Create Wallet

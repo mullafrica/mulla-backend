@@ -15,6 +15,7 @@ use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserIPDetailsModel;
 use App\Models\MullaUserWallets;
 use App\Models\User;
+use App\Services\ComplianceService;
 use App\Services\CustomerIoService;
 use App\Services\PushNotification;
 use App\Services\VirtualAccount;
@@ -44,7 +45,7 @@ class Jobs implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(VirtualAccount $va): void
+    public function handle(VirtualAccount $va, ComplianceService $cs): void
     {
         if ($this->data['type'] === 'validate_bvn') {
             $response = Http::withHeaders([
@@ -61,14 +62,15 @@ class Jobs implements ShouldQueue
                     'bank_code' => $this->data['bank_code'],
                 ]);
 
-
             $this->sendToDiscord('BVN validation in progress.' . ' (ID:' . $this->data['firstname'] . ' ' . $this->data['lastname'] . ' (pt->' . json_encode($response->json()) . ')');
             $this->sendToDiscord('Internal name validation in progress.');
 
-            // Opay (999992), Palmpay (999991), MTN Momo (120003), Moniepoint (50515), fairmoney (51318)
-            // $this->checkAccount($this->data['phone'], $this->data['firstname'] . ' ' . $this->data['lastname']);
-
-
+            $cs->resolveAccount([
+                'user_id' => $this->data['user_id'],
+                'account_number' => $this->data['phone'],
+                'first_name' => $this->data['firstname'],
+                'last_name' => $this->data['lastname'],
+            ]);
         }
 
         if ($this->data['type'] === 'create_account') {
@@ -189,8 +191,5 @@ class Jobs implements ShouldQueue
         }
     }
 
-    public function checkAccount($message)
-    {
-        
-    }
+    public function checkAccount($message) {}
 }
