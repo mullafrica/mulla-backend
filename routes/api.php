@@ -39,6 +39,11 @@ Route::post('/comet/auth/token/phone', [MullaAuthController::class, 'sendVerific
 Route::post('/comet/auth/verify/phone', [MullaAuthController::class, 'verifyVerificationCodeFromWhatsapp']);
 Route::post('/comet/auth/resolve/bank', [MullaAuthController::class, 'resolveBankAccount']);
 
+Route::middleware(['throttle:10,5']) // Error response says 1min, but actually 5min
+    ->group(function () {
+        Route::post('/comet/auth/bvn/token', [MullaAuthController::class, 'sendBVNToken']);
+    });
+
 Route::post('/comet/account/resolve', [MullaAuthController::class, 'resolveAccount']);
 
 // Route::post('/comet/auth/verify', [MullaAuthController::class, 'registrationToken']);

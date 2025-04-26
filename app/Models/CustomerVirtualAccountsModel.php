@@ -11,5 +11,5 @@ class CustomerVirtualAccountsModel extends Model
 
     protected $guarded = [];
 
-    protected $hidden = ['id', 'created_at', 'updated_at', 'customer_id', 'user_id', 'bank_id', 'bank_slug'];
+    protected $hidden = ['id', 'created_at', 'updated_at', 'customer_id', 'user_id', 'bank_id'];
 }

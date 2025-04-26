@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\SafeHavenEnums;
 use App\Jobs\DiscordBots;
 use App\Jobs\Jobs;
+use App\Models\Alt\BVNVerificationDataModel;
 use App\Models\ForgotPasswordTokens;
 use App\Models\MullaUserCashbackWallets;
 use App\Models\MullaUserWallets;
@@ -13,6 +15,7 @@ use App\Models\VerifyEmailToken;
 use App\Models\VerifyPhoneTokenModel;
 use App\Services\ComplianceService;
 use App\Services\CustomerIoService;
+use App\Services\SafeHavenService;
 use App\Services\VirtualAccount;
 use App\Traits\Reusables;
 use App\Traits\UniqueId;
@@ -21,6 +24,7 @@ use hisorange\BrowserDetect\Facade as Browser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 
@@ -29,7 +33,7 @@ class MullaAuthController extends Controller
     use UniqueId, Reusables;
 
     public function resolveAccount(Request $request, ComplianceService $cs)
-    {        
+    {
         return $cs->resolveAccount([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
@@ -203,7 +207,7 @@ class MullaAuthController extends Controller
     {
         $browser = Browser::browserFamily();
         $platform = Browser::platformName();
-        
+
         $request->validate([
             'token' => 'required',
             'firstname' => 'required',
@@ -443,7 +447,7 @@ class MullaAuthController extends Controller
                 'message' => 'Verification code sent successfully.',
                 'token' => $res->json()
             ], 200);
-        } 
+        }
 
         return response()->json([
             'message' => 'Something went wrong. Please try again later.',
@@ -488,5 +492,58 @@ class MullaAuthController extends Controller
                 'message' => $res->json()['message'],
             ], 400);
         }
+    }
+
+    public function sendBVNToken(Request $request, SafeHavenService $sh)
+    {
+        $request->validate([
+            'bvn' => 'required|numeric|digits:11',
+        ]);
+
+        $token = $sh->token();
+
+        $res = Http::withToken($token)->post('https://api.safehavenmfb.com/identity/v2', [
+            "type" => "BVN",
+            "number" => $request->bvn,
+            "debitAccountNumber" => SafeHavenEnums::ACCOUNT_NUMBER,
+        ]);
+
+        if ($res->successful()) {
+            BVNVerificationDataModel::updateOrCreate([
+                'bvn' => $request->bvn,
+                'bvn_id' => $res->json()['data']['_id'],
+            ]);
+
+            return response()->json([
+                'message' => 'BVN token sent successfully.',
+                '_id' => $res->json()['data']['_id']
+            ], 200);
+        } else {
+            return response()->json([
+                'message' => $res->json()['message'],
+            ], 400);
+        }
+    }
+
+    public function ValidateBVNOTP(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+        ]);
+
+        // BVNVerificationDataModel::where('bvn', $request->bvn)->update([
+        //     'firstName' => $res->json()['data']['firstName'],
+        //     'lastName' => $res->json()['data']['lastName'],
+        //     'otherName' => $res->json()['data']['otherName'],
+        //     'dateOfBirth' => $res->json()['data']['dateOfBirth'],
+        //     'phoneNumber' => $res->json()['data']['phoneNumber'],
+        //     'enrollmentBank' => $res->json()['data']['enrollmentBank'],
+        //     'enrollmentBranch' => $res->json()['data']['enrollmentBranch'],
+        //     'image' => $res->json()['data']['image'],
+        // ]);
+
+        return response()->json([
+            'message' => 'Token sent successfully'
+        ], 200);
     }
 }
