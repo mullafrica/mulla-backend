@@ -8,7 +8,7 @@ class BaseUrls
     
     const BANK = "test-bank";
 
-    const TARGET_BANK_SLUG = "test-bank";
+    const TARGET_BANK_SLUG = "titan-paystack";
 
     const MULTIPLIER = 100;
 
