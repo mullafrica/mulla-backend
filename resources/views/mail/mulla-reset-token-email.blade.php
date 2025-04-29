@@ -18,7 +18,7 @@
                 <div style="padding-bottom: 2rem; font-size: 15px;">Enter this 6-digit code to verify it's really you on the other end of this.</div>
                 <div style="font-size: 30px; padding-bottom: 2rem;">{{ $token ?? '' }}</div>
                 <div style="padding-bottom: 2rem; font-size: 15px;">This code expires in 5 minutes.</div>
-                <div style="padding-bottom: 2rem; font-size: 15px;">If you did not request this password reset code, we recommend that you change your Mulla password immediately by using this <a href="https://mulla.africa" style="color: #333; text-decoration: underline;">link</a>.</div>
+                <div style="padding-bottom: 2rem; font-size: 15px;">If you did not request this password reset code, we recommend that you change your Mulla password immediately by using this <a href="https://app.mulla.money" style="color: #333; text-decoration: underline;">link</a>.</div>
                 <div style="padding-bottom: 2rem; font-size: 15px;">For your account safety, please do not forward this email or provide the details of this email to anyone.</div>
                 <div style="padding-bottom: 2rem; font-size: 15px;">Thank you for helping us keep your account secure.<br />Your Friends at Mulla.</div>
                 <div style="padding-bottom: 2rem; font-size: 15px;">Something not looking right? Please reply to this email or contact us at <a href="mailto:support@mulla.africa" style="color: #333; text-decoration: underline;">support@mulla.africa</a> right away.</div>
