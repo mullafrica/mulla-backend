@@ -19,7 +19,7 @@
                 </div> --}}
             </header>
 
-            <div style="">
+            <div>
                 <img src="https://default-wp.s3.eu-west-1.amazonaws.com/Other/Asset+12.png" alt="Header Image" style="width: 100%; display: block;" />
             </div>
 
