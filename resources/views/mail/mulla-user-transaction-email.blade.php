@@ -73,7 +73,7 @@
             </div>
 
             <div style="padding-bottom: 2rem; font-size: 15px;">
-                <a href="https://mulla.africa/dashboard/transactions" class="button"
+                <a href="https://app.mulla.money/dashboard/transactions" class="button"
                     style="display: block; width: 100%; background-color: #03F8C5; padding: 1.5rem; text-align: center; color: #000; font-size: 1.25rem; font-weight: 600; text-decoration: none; border-radius: 0.75rem; box-sizing: border-box;">
                     View your Transactions
                 </a>
