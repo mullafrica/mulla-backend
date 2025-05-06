@@ -62,8 +62,8 @@ Route::post('/comet/auth/password/reset', [MullaAuthController::class, 'resetPas
 Route::post('/comet/bloc/webhook', [Webhooks::class, 'blocWebhooks']);
 Route::post('/comet/webhook/all', [Webhooks::class, 'all']);
 
-Route::post('/business/auth/register', [MullaBusinessAuthController::class, 'register']);
-Route::post('/business/auth/login', [MullaBusinessAuthController::class, 'login']);
+// Route::post('/business/auth/register', [MullaBusinessAuthController::class, 'register']);
+// Route::post('/business/auth/login', [MullaBusinessAuthController::class, 'login']);
 
 Route::get('/m/banks', function () {
     return MullaBusinessBulkTransferController::getBanks();
