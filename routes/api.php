@@ -62,8 +62,8 @@ Route::post('/comet/auth/password/reset', [MullaAuthController::class, 'resetPas
 Route::post('/comet/bloc/webhook', [Webhooks::class, 'blocWebhooks']);
 Route::post('/comet/webhook/all', [Webhooks::class, 'all']);
 
-Route::post('/business/auth/register', [MullaBusinessAuthController::class, 'register']);
-// Route::post('/business/auth/login', [MullaBusinessAuthController::class, 'login']);
+// Route::post('/business/auth/register', [MullaBusinessAuthController::class, 'register']);
+Route::post('/business/auth/login', [MullaBusinessAuthController::class, 'login']);
 
 Route::get('/m/banks', function () {
     return MullaBusinessBulkTransferController::getBanks();
@@ -142,7 +142,7 @@ Route::middleware('auth:business')->group(function () {
     Route::post('/business/bulktransfer', [MullaBusinessBulkTransferController::class, 'createBulkTransfer']);
     Route::get('/business/bulktransfer', [MullaBusinessBulkTransferController::class, 'getBulkTransfers']);
 
-    // Route::post('/business/bulktransfer/alpha/{listId}', [MullaBusinessBulkTransferController::class, 'initiateBulkTransferAlpha']);
+    Route::post('/business/bulktransfer/alpha/{listId}', [MullaBusinessBulkTransferController::class, 'initiateBulkTransferAlpha']);
     Route::get('/business/bulktransfer/alpha', [MullaBusinessBulkTransferController::class, 'getBulkTransferAlpha']);
     Route::get('/business/bulktransfer/alpha/transactions/{id}', [MullaBusinessBulkTransferController::class, 'getBulkTransferTransactions']);
 
