@@ -43,7 +43,14 @@ class MullaBusinessAuthController extends Controller
                 return response()->json(
                     [
                         "message" => "Logged in.",
-                        "user" => $user,
+                        "user" => [
+                            'id' => $user->id,
+                            'email' => $user->email,
+                            'business_name' => $user->business_name,
+                            'firstname' => $user->firstname,
+                            'lastname' => $user->lastname,
+                            'phone' => $user->phone,
+                        ],
                         "token" => $token,
                     ],
                     200
@@ -51,7 +58,7 @@ class MullaBusinessAuthController extends Controller
             } else {
                 return response()->json(
                     [
-                        "message" => "Incorrect password, try again.",
+                        "message" => "Invalid credentials.",
                     ],
                     401
                 );
@@ -59,9 +66,9 @@ class MullaBusinessAuthController extends Controller
         } else {
             return response()->json(
                 [
-                    "message" => "Account not found, please sign up first.",
+                    "message" => "Invalid credentials.",
                 ],
-                404
+                401
             );
         }
     }
@@ -146,7 +153,14 @@ class MullaBusinessAuthController extends Controller
         return response()->json(
             [
                 "message" => "User created successfully.",
-                "user" => $user,
+                "user" => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'business_name' => $user->business_name,
+                    'firstname' => $user->firstname,
+                    'lastname' => $user->lastname,
+                    'phone' => $user->phone,
+                ],
                 "token" => $user->createToken($request->email)->plainTextToken,
             ],
             200

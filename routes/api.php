@@ -63,7 +63,8 @@ Route::post('/comet/bloc/webhook', [Webhooks::class, 'blocWebhooks']);
 Route::post('/comet/webhook/all', [Webhooks::class, 'all']);
 
 // Route::post('/business/auth/register', [MullaBusinessAuthController::class, 'register']);
-Route::post('/business/auth/login', [MullaBusinessAuthController::class, 'login']);
+Route::middleware(['throttle:1,1']) // 5 attempts per minute
+    ->post('/business/auth/login', [MullaBusinessAuthController::class, 'login']);
 
 Route::get('/m/banks', function () {
     return MullaBusinessBulkTransferController::getBanks();
