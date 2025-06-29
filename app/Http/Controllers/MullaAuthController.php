@@ -77,17 +77,67 @@ class MullaAuthController extends Controller
 
                 $token = $user->createToken($request->phone, ['*'], now()->addMinutes(config('sanctum.expiration')))->plainTextToken;
 
+                // Enhanced Discord logging for successful login
+                DiscordBots::dispatch([
+                    'message' => '🔒✅ USER LOGIN SUCCESS',
+                    'details' => [
+                        'user_id' => $user->id,
+                        'email' => $user->email,
+                        'phone' => $user->phone,
+                        'name' => $user->firstname . ' ' . $user->lastname,
+                        'ip_address' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
+                        'browser' => $browser,
+                        'platform' => $platform,
+                        'location' => request()->header('CF-IPCountry') ?? 'Unknown',
+                        'timestamp' => now()->toDateTimeString()
+                    ]
+                ]);
+
                 return response()->json([
                     'message' => 'Logged in.',
                     'user' => $user,
                     'token' => $token
                 ], 200);
             } else {
+                // Log failed password attempt
+                DiscordBots::dispatch([
+                    'message' => '🔒❌ LOGIN FAILED - Wrong Password',
+                    'details' => [
+                        'phone' => $request->phone,
+                        'user_exists' => 'YES',
+                        'user_id' => $user->id,
+                        'email' => $user->email,
+                        'reason' => 'Incorrect password',
+                        'ip_address' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
+                        'browser' => $browser,
+                        'platform' => $platform,
+                        'timestamp' => now()->toDateTimeString()
+                    ]
+                ]);
+                
                 return response()->json([
                     'message' => 'Incorrect password, try again.'
                 ], 400);
             }
         } else {
+            // Log failed login attempt for non-existent user
+            DiscordBots::dispatch([
+                'message' => '🔒❌ LOGIN FAILED - User Not Found',
+                'details' => [
+                    'phone' => $request->phone,
+                    'user_exists' => 'NO',
+                    'reason' => 'Account not found',
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                    'browser' => $browser,
+                    'platform' => $platform,
+                    'location' => request()->header('CF-IPCountry') ?? 'Unknown',
+                    'timestamp' => now()->toDateTimeString()
+                ]
+            ]);
+            
             return response()->json([
                 'message' => 'Account not found, please sign up first.'
             ], 400);

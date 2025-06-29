@@ -41,7 +41,25 @@ class WebhookJobs implements ShouldQueue
             // Add transfer to customer wallet
             if ($cvam = CustomerVirtualAccountsModel::where('customer_id', $this->data['data']['customer']['customer_code'])->first()) {
                 $amount = $this->data['data']['amount'] - $this->data['data']['fees'];
+                $user = User::find($cvam->user_id);
+                $oldBalance = MullaUserWallets::where('user_id', $cvam->user_id)->value('balance') ?? 0;
+                
                 MullaUserWallets::where('user_id', $cvam->user_id)->increment('balance', $amount / 100);
+                
+                // Enhanced Discord logging for wallet funding
+                DiscordBots::dispatch([
+                    'message' => '💳 **Wallet funded** - Bank transfer received',
+                    'details' => [
+                        'user_id' => $cvam->user_id,
+                        'email' => $user->email,
+                        'name' => $user->firstname . ' ' . $user->lastname,
+                        'amount' => '₦' . number_format($amount / 100),
+                        'sender_name' => $this->data['data']['authorization']['sender_name'] ?? 'Unknown',
+                        'sender_bank' => $this->data['data']['authorization']['sender_bank'] ?? 'Unknown',
+                        'reference' => $this->data['data']['reference'],
+                        'timestamp' => now()->toDateTimeString()
+                    ]
+                ]);
 
                 MullaUserTransactions::create([
                     'type' => 'Deposit',
@@ -65,7 +83,6 @@ class WebhookJobs implements ShouldQueue
                     'status' => $this->data['data']['status']
                 ]);
 
-                $this->sendToDiscord('New transfer to customer wallet has been made. (ID:' . $cvam->user_id . ') ' . 'Amount: ' . $amount / 100 . ' NGN,' . ' ' . User::find($cvam->user_id)->email);
             }
         }
 
@@ -94,7 +111,16 @@ class WebhookJobs implements ShouldQueue
 
             // Mulla User (What to do here?)
 
-            DiscordBots::dispatch(['message' => 'Mulla TRF/SUCCESS - ' . json_encode($this->data['data'])]);
+            DiscordBots::dispatch([
+                'message' => '💸 **Transfer successful** - Business bulk transfer',
+                'details' => [
+                    'reference' => $this->data['data']['reference'],
+                    'amount' => '₦' . number_format($this->data['data']['amount'] / 100),
+                    'recipient' => $this->data['data']['recipient']['name'] ?? 'N/A',
+                    'bank' => $this->data['data']['recipient']['details']['bank_name'] ?? 'N/A',
+                    'timestamp' => now()->toDateTimeString()
+                ]
+            ]);
         }
 
         /**
@@ -104,7 +130,6 @@ class WebhookJobs implements ShouldQueue
          */
         if ($this->data['event'] === 'customeridentification.success') {
 
-            $this->sendToDiscord('Creating DVA for customer.');
 
             $cvam = CustomerVirtualAccountsModel::where('customer_id', $this->data['data']['customer_code'])->first();
 
@@ -127,7 +152,14 @@ class WebhookJobs implements ShouldQueue
         }
 
         if ($this->data['event'] === 'customeridentification.failed') {
-            $this->sendToDiscord('Customer identification failed. - ' . 'Reason: ' . json_encode($this->data));
+            DiscordBots::dispatch([
+                'message' => '❌ **Customer verification failed** - BVN validation error',
+                'details' => [
+                    'customer_code' => $this->data['data']['customer_code'] ?? 'N/A',
+                    'error' => $this->data['data']['reason'] ?? 'Unknown error',
+                    'timestamp' => now()->toDateTimeString()
+                ]
+            ]);
         }
     }
 }

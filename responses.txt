@@ -1,0 +1,911 @@
+// SafeHaven
+// Invalid access token response when i call any apis when the token has expired
+{
+    "statusCode": 403,
+    "message": "Expired token - Access Restricted!"
+}
+-------
+// Getting the assertion for token, this returns the token we'll use for our responses, let's save this on the database, we only generate a new one if the current one does not work
+// Endpoint -> https://api.safehavenmfb.com/oauth2/token
+{
+    "grant_type": "client_credentials",
+    "client_id": "7e36708c22981a084fff541768f0a33e",
+    "client_assertion": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL211bGxhLm1vbmV5Iiwic3ViIjoiN2UzNjcwOGMyMjk4MWEwODRmZmY1NDE3NjhmMGEzM2UiLCJhdWQiOiJodHRwczovL2FwaS5zYWZlaGF2ZW5tZmIuY29tIiwiaWF0IjoxNzM5OTU4MzQyLCJleHAiOjE3NzE0OTM2NDV9.JEyVWS82VscoErhhuJ2MW9qAnWWuHFsX168_Q6o0HjJR4xDaXIEm7tSEbkbvc-x-cnM9AYi30LQqyI24nFxvvY2rESGu6uG2BA0eIct-0HJHpG9Qr39ff8T_e107okPL5zMfFyPDtfaLSxAxJEWPk7moJD0pNprjF7PP6LrGdaY",
+    "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+}
+
+// Response -> we're using the access token for the rest of our api calls for SafeHaven
+{
+    "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwaS5zYWZlaGF2ZW5tZmIuY29tIiwic3ViIjoiN2UzNjcwOGMyMjk4MWEwODRmZmY1NDE3NjhmMGEzM2UiLCJhdWQiOiJodHRwczovL211bGxhLm1vbmV5IiwianRpIjoiNTRkZmFkMzhkNGMzZDAzZTNmZGFkNTBkMTYxYTA3MTUiLCJncmFudF90eXBlIjoiYWNjZXNzX3Rva2VuIiwic2NvcGVzIjpbIlJFQUQiLCJXUklURSIsIlBBWSJdLCJpYnNfY2xpZW50X2lkIjoiNjdiMzIyOTZlMjViYjcwMDI0MTJhMmYyIiwiaWJzX3VzZXJfaWQiOiI2N2IzMWU1OGUyNWJiNzAwMjQxMDZhOTUiLCJpYXQiOjE3NTA5ODYxNjksImV4cCI6MTc1MDk4ODU2OX0.APMPok9dPXPiv8JtBCMnhO9oVSp-I4CpAKsrneFQ3jdctbePoT6esOYubs0BwWdyeOl0b1RWuk92m-SVF-xxxf2JtwlJ-YerUqxSq9td1fRnfkggw4RUtcv3zDPHtf8XU3jijzAkradZIjD0o6xZq4GCaf-irxKV52tKgU-RUz0",
+    "client_id": "7e36708c22981a084fff541768f0a33e",
+    "token_type": "Bearer",
+    "expires_in": 2399,
+    "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FwaS5zYWZlaGF2ZW5tZmIuY29tIiwic3ViIjoiN2UzNjcwOGMyMjk4MWEwODRmZmY1NDE3NjhmMGEzM2UiLCJhdWQiOiJodHRwczovL211bGxhLm1vbmV5IiwianRpIjoiYjRlZmU1M2JkZDQ1OGU0ZjMwYmJkN2RiZmYyOWY0OTYiLCJncmFudF90eXBlIjoicmVmcmVzaF90b2tlbiIsInNjb3BlcyI6WyJSRUFEIiwiV1JJVEUiLCJQQVkiXSwiaWJzX2NsaWVudF9pZCI6IjY3YjMyMjk2ZTI1YmI3MDAyNDEyYTJmMiIsImlic191c2VyX2lkIjoiNjdiMzFlNThlMjViYjcwMDI0MTA2YTk1IiwiaWF0IjoxNzUwOTg2MTY5LCJleHAiOjE3NTg3NjIxNjl9.p7faYXFYqrEl762zOVFI9zX0i-zDChZvMkr_UgbymoD68WJWOqBAhARoPb1JIzAoUl9Q0NjQg52sJZ7vziS7nPxiizuTBxtWWD_o5wWgS8BjurC63BsdejR2bQhht2s6BjAxgrPfpNZjlDY1LkOgK18ZnKuQsYEVOqIutmwmgaU",
+    "ibs_client_id": "67b32296e25bb7002412a2f2",
+    "ibs_user_id": "67b31e58e25bb70024106a95"
+}
+-------
+// Pay utility -> Electricity
+// Endpoint -> https://api.safehavenmfb.com/vas/pay/utility
+{
+    "serviceCategoryId": "61efac35da92348f9dde5f77",
+    "amount": 1000,
+    "channel": "WEB",
+    "debitAccountNumber": "0111124637",
+    "meterNumber": "45031769073",
+    "vendType": "PREPAID"
+}
+// Response -> Do a query to check the MullaUserTransactions model to see the table column names and then let's store the relevant data
+{
+    "statusCode": 200,
+    "message": "Utility Package purchased successfully.",
+    "data": {
+        "clientId": "67b32296e25bb7002412a2f2",
+        "serviceCategoryId": "61efac35da92348f9dde5f77",
+        "reference": "23eea738cb1943dbad4f12f203a68518",
+        "verificationId": null,
+        "status": "successful", // any other value or api status of not 200 is probably a failed transaction, but check for pending and failed, we will need to handle both cases
+        "amount": 1000,
+        "id": "685dee2a8702aa02197fc4cc",
+        "utilityToken": "6198-6055-9155-8727-1346",
+        "metaData": {
+            "id": 133793703,
+            "amountGenerated": 930.23,
+            "tariff": null,
+            "debtAmount": 0,
+            "debtRemaining": 0,
+            "disco": "ABUJA",
+            "orderId": "23eea738cb1943dbad4f12f203a68518",
+            "receiptNo": "15240420",
+            "tax": 69.77,
+            "vendTime": "2025-06-27 02:04:42",
+            "token": "6198-6055-9155-8727-1346",
+            "totalAmountPaid": 1000,
+            "units": 4.4,
+            "vendAmount": 0,
+            "vendRef": "1750986268615",
+            "responseCode": 100,
+            "responseMessage": "Request successful",
+            "address": "Plot 15, Bishop Adeboyes Street, Andikan Beulah Estate, Gwarinpa, , GWARIMPA",
+            "name": "Adewale Akin Wilson .",
+            "phoneNo": null,
+            "charges": "0",
+            "tariffIndex": null,
+            "parcels": [
+                {
+                    "type": "TOKEN",
+                    "content": "61986055915587271346"
+                }
+            ],
+            "demandCategory": "NMD",
+            "assetProvider": "ABUJA",
+            "tariffClass": null
+        },
+        "receiver": {
+            "number": "45031769073",
+            "name": null,
+            "address": null,
+            "distribution": null,
+            "vendType": null
+        }
+    }
+}
+
+## Validate meter safehavenmfb
+Endpoint -> https://api.safehavenmfb.com/vas/verify
+{
+    "serviceCategoryId": "61efac35da92348f9dde5f77",
+    "entityNumber": "45700443695"
+}
+
+Response -> success
+{
+    "statusCode": 200,
+    "message": "Power Data verified successfully.",
+    "sessionId": "090286250627033227177622803107",
+    "data": {
+        "reference": "090286250627033227177622803107",
+        "discoCode": "ABUJA",
+        "vendType": "PREPAID",
+        "meterNo": "45700443695",
+        "minVendAmount": 900,
+        "maxVendAmount": 10000000,
+        "outstanding": 0,
+        "debtRepayment": 0,
+        "name": "ASO ESTATE GARDEN",
+        "address": "BLOCK 30 HOUSE 3 PLOT 57 KARSANA, , KUBWA",
+        "orderId": "823388E73CDC4C713CFE8F3DD32A4C17"
+    }
+}
+
+Response -> failure
+{
+    "statusCode": 400,
+    "message": "Failed to verify Power Data. Please try again."
+}
+
+
+-------
+// VTPass
+// For Airtime
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "MTN Airtime VTU",
+            "unique_element": "08011111111",
+            "unit_price": "20",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 0.7000000000000001,
+            "total_amount": 19.3,
+            "discount": null,
+            "type": "Airtime Recharge",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 0,
+            "amount": "20",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17415980564672211596777904",
+            "commission_details": {
+                "amount": 0.7000000000000001,
+                "rate": "3.50",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031010146932932",
+    "amount": 20,
+    "transaction_date": "2025-03-10T09:14:16.000000Z",
+    "purchased_code": ""
+}
+-----
+## Internet data
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "MTN Data",
+            "unique_element": "08011111111",
+            "unit_price": "100",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 4,
+            "total_amount": 96,
+            "discount": null,
+            "type": "Data Services",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 0,
+            "amount": "100",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17415991578739548187285972",
+            "commission_details": {
+                "amount": 4,
+                "rate": "4.00",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031010323857076",
+    "amount": 100,
+    "transaction_date": "2025-03-10T09:32:37.000000Z",
+    "purchased_code": ""
+}
+
+## For Electricity - AEDC
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "Abuja Electricity Distribution Company- AEDC",
+            "unique_element": "1111111111111",
+            "unit_price": "2000",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 30,
+            "total_amount": 1970,
+            "discount": null,
+            "type": "Electricity Bill",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 0,
+            "amount": "2000",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17416104208318106970887903",
+            "commission_details": {
+                "amount": 30,
+                "rate": "1.50",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031013404750020",
+    "amount": 2000,
+    "transaction_date": "2025-03-10T12:40:20.000000Z",
+    "purchased_code": "Token : token: 47133458396693522090",
+    "MeterNumber": "45066715124",
+    "Token": "token: 47133458396693522090",
+    "ReceiptNumber": null,
+    "PurchasedUnits": "13.3",
+    "DebtDescription": null,
+    "DebtAmount": null,
+    "RefundUnits": null,
+    "ServiceChargeVatExcl": null,
+    "Name": "ALPHACELL TECHNO-LTD",
+    "Address": "ALPHACELL TECHNO-LTD - 0",
+    "Reference": "47133458396693522090",
+    "Vat": null,
+    "ResponseTime": null,
+    "TariffRate": null,
+    "FreeUnits": null,
+    "MeterCategory": "kWh",
+    "UtilityAmountVatExcl": null
+}
+
+## For Electricity - eyJpc3MiOiJodHRwczovL211bGxhLm1vbmV5Iiwic3ViIjoiN2UzNjcwOGMyMjk4MWEwODRmZmY1NDE3NjhmMGEzM2UiLCJhdWQiOiJodHRwczovL2FwaS5zYWZlaGF2ZW5tZmIuY29tIiwiaWF0IjoxNzM5OTU4MzQyLCJleHAiOjE3NzE0OTM2NDV9{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "Eko Electric Payment - EKEDC",
+            "unique_element": "1111111111111",
+            "unit_price": "2000",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 16,
+            "total_amount": 1984,
+            "discount": null,
+            "type": "Electricity Bill",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 0,
+            "amount": "2000",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17416167852316546518298914",
+            "commission_details": {
+                "amount": 16,
+                "rate": "0.80",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031015262342799",
+    "amount": 2000,
+    "transaction_date": "2025-03-10T14:26:25.000000Z",
+    "purchased_code": "Token : 11786621902768210244",
+    "customerName": null,
+    "customerAddress": null,
+    "exchangeReference": "EKEDP3EMDB11192316",
+    "mainToken": "11786621902768210244",
+    "mainTokenDescription": "Resource",
+    "mainTokenUnits": null,
+    "mainTokenTax": 1370.23,
+    "mainsTokenAmount": 18269.77,
+    "bonusToken": null,
+    "bonusTokenDescription": null,
+    "bonusTokenUnits": null,
+    "bonusTokenTax": null,
+    "bonusTokenAmount": null,
+    "tariffIndex": "02",
+    "debtTariff": null,
+    "debtAmount": null,
+    "debtDescription": null,
+    "KCT1": "N\\A",
+    "KCT2": "N\\A"
+}
+
+## For Electricity - IKEDC
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "Ikeja Electric Payment - IKEDC",
+            "unique_element": "1111111111111",
+            "unit_price": "2000",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 30,
+            "total_amount": 1970,
+            "discount": null,
+            "type": "Electricity Bill",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 0,
+            "amount": "2000",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17416102247366731230557150",
+            "commission_details": {
+                "amount": 30,
+                "rate": "1.50",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031013366434255",
+    "amount": 2000,
+    "transaction_date": "2025-03-10T12:37:04.000000Z",
+    "purchased_code": "Token : 26362054405982757802",
+    "customerName": "N/A",
+    "customerAddress": "N/A",
+    "meterNumber": "N/A",
+    "token": "Token : 26362054405982757802",
+    "tokenAmount": 1860.47,
+    "exchangeReference": "40532461",
+    "resetToken": "N/A",
+    "configureToken": "N/A",
+    "units": "79.9 kWh",
+    "fixChargeAmount": 0,
+    "tariff": "R2 SINGLE PHASE RESIDENTIAL",
+    "taxAmount": 0,
+    "debtAmount": 0,
+    "kct1": "N/A",
+    "kct2": "N/A",
+    "penalty": 0,
+    "costOfUnit": 0,
+    "announcement": "N/A",
+    "meterCost": 0,
+    "currentCharge": 0,
+    "lossOfRevenue": 0,
+    "tariffBaseRate": 0,
+    "installationFee": 0,
+    "reconnectionFee": 0,
+    "meterServiceCharge": 0,
+    "administrativeCharge": 0
+}
+
+## Electricity - JED
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "Jos Electric - JED",
+            "unique_element": "1111111111111",
+            "unit_price": "2000",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 24,
+            "total_amount": 1976,
+            "discount": null,
+            "type": "Electricity Bill",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 0,
+            "amount": "2000",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17416103351347851334418806",
+            "commission_details": {
+                "amount": 24,
+                "rate": "1.20",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031013389044327",
+    "amount": 2000,
+    "transaction_date": "2025-03-10T12:38:55.000000Z",
+    "purchased_code": "Token : 3737-6908-5436-2208-2124",
+    "CustomerName": null,
+    "CustomerAddress": "J/FARI AREA GOMB",
+    "DebtTax": null,
+    "DebtAmount": null,
+    "DebtValue": null,
+    "DebtRem": null,
+    "FixedTax": null,
+    "FixedAmount": null,
+    "FixedValue": null,
+    "Amount": 2000,
+    "Tax": null,
+    "Units": "4.5",
+    "Token": "3737-6908-5436-2208-2124",
+    "Tariff": null,
+    "Description": null,
+    "Receipt": "250204758381"
+}
+
+## Electricity - IBEDC
+
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "IBEDC - Ibadan Electricity Distribution Company",
+            "unique_element": "1111111111111",
+            "unit_price": "2000",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 12,
+            "total_amount": 2088,
+            "discount": null,
+            "type": "Electricity Bill",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 100,
+            "amount": "2000",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17416103645151355918561732",
+            "commission_details": {
+                "amount": 12,
+                "rate": "0.60",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031013391491254",
+    "amount": 2000,
+    "transaction_date": "2025-03-10T12:39:24.000000Z",
+    "purchased_code": "Token : 2821 4114 9170 6793 0943",
+    "CustomerName": null,
+    "CustomerAddress": "21, MUYIBAT OYEFUSI. STREET. IKEJA",
+    "ReceiptNumber": "9949250204161541",
+    "Amount": 2000,
+    "Tax": "150.0",
+    "Units": "61.2kwH",
+    "Token": "2821 4114 9170 6793 0943",
+    "Tariff": "NMD Service Band: A12H Tarrif: 56.40",
+    "Description": null,
+    "KCT1": null,
+    "KCT2": null
+}
+
+## Electricity -> KAEDCO
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "Kaduna Electric - KAEDCO",
+            "unique_element": "1111111111111",
+            "unit_price": "2000",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 20,
+            "total_amount": 1980,
+            "discount": null,
+            "type": "Electricity Bill",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 0,
+            "amount": "2000",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17416103913686250052205555",
+            "commission_details": {
+                "amount": 20,
+                "rate": "1.00",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031013392128480",
+    "amount": 2000,
+    "transaction_date": "2025-03-10T12:39:51.000000Z",
+    "purchased_code": "Token : 20229412358945840218",
+    "customerName": null,
+    "customerAddress": "NO 19B BAKAR R/CHUKUN KAWO KADUNA ",
+    "token": "20229412358945840218",
+    "receiptNo": "210913515254",
+    "units": "33.20",
+    "description": null,
+    "tariff": null,
+    "taxAmount": null
+}
+
+## Electricity -> EEDC
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "Enugu Electric - EEDC",
+            "unique_element": "1111111111111",
+            "unit_price": "2000",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 40,
+            "total_amount": 1960,
+            "discount": null,
+            "type": "Electricity Bill",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 0,
+            "amount": "2000",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17416157764798283294972245",
+            "commission_details": {
+                "amount": 40,
+                "rate": "2.00",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031015098968818",
+    "amount": 2000,
+    "transaction_date": "2025-03-10T14:09:36.000000Z",
+    "purchased_code": "Token : 07865700760175033702",
+    "exchangeReference": "17386818921470111",
+    "arrearsBalance": null,
+    "appliedToArrears": null,
+    "wallet": null,
+    "vat": 139.53,
+    "invoiceNumber": "112496625",
+    "appliedToWallet": null,
+    "units": 34.5,
+    "token": "07865700760175033702",
+    "kct1": null,
+    "kct2": null
+}
+
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "Benin Electricity - BEDC",
+            "unique_element": "1111111111111",
+            "unit_price": "2000",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": "1.00",
+            "total_amount": 2099,
+            "discount": null,
+            "type": "Electricity Bill",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 100,
+            "amount": "2000",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17416163065373669327307121",
+            "commission_details": {
+                "amount": "1.00",
+                "rate": "1.00",
+                "rate_type": "flat",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031015189364811",
+    "amount": 2000,
+    "transaction_date": "2025-03-10T14:18:26.000000Z",
+    "purchased_code": "Token : 36001644489787932779",
+    "exchangeReference": null,
+    "arrearsBalance": null,
+    "debtAmount": null,
+    "appliedToArrears": null,
+    "wallet": null,
+    "vat": null,
+    "invoiceNumber": null,
+    "appliedToWallet": null,
+    "units": "15.4 Kwh",
+    "token": "36001644489787932779",
+    "kct1": null,
+    "kct2": null
+}
+
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "Aba Electric Payment - ABEDC",
+            "unique_element": "1111111111111",
+            "unit_price": "2000",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 20,
+            "total_amount": 2080,
+            "discount": null,
+            "type": "Electricity Bill",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 100,
+            "amount": "2000",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17416168572814511247477325",
+            "commission_details": {
+                "amount": 20,
+                "rate": "1.00",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031015278353198",
+    "amount": 2000,
+    "transaction_date": "2025-03-10T14:27:37.000000Z",
+    "purchased_code": "",
+    "customerName": null,
+    "customerAddress": null,
+    "token": null,
+    "tokenAmount": 1860.47,
+    "exchangeReference": "40532461",
+    "resetToken": null,
+    "configureToken": null,
+    "units": "109.9 kWh",
+    "fixChargeAmount": null,
+    "tariff": "R2 SINGLE PHASE RESIDENTIAL",
+    "taxAmount": null,
+    "debtAmount": null
+}
+
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "Yola Electric Disco Payment - YEDC",
+            "unique_element": "1010101010101",
+            "unit_price": "2000",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 16,
+            "total_amount": 2084,
+            "discount": null,
+            "type": "Electricity Bill",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 100,
+            "amount": "2000",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17416171037359405698767965",
+            "commission_details": {
+                "amount": 16,
+                "rate": "0.80",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031015315869793",
+    "amount": 2000,
+    "transaction_date": "2025-03-10T14:31:43.000000Z",
+    "purchased_code": "Token : 7162-0565-1517-0479-8704",
+    "CustomerName": "DAHIRU TANIMU",
+    "CustomerAddress": "MOHAMMED MUSTAPHA WAY",
+    "ReceiptNumber": "98628230-fcc9-4251-9c12-ab1dc3760b94",
+    "Amount": 2000,
+    "Tax": 34.9,
+    "Units": "7.40",
+    "Token": "7162-0565-1517-0479-8704",
+    "Tariff": null,
+    "Description": null,
+    "KCT1": null,
+    "KCT2": null
+}
+
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "PHED - Port Harcourt Electric",
+            "unique_element": "1111111111111",
+            "unit_price": "2000",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 40,
+            "total_amount": 1960,
+            "discount": null,
+            "type": "Electricity Bill",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 0,
+            "amount": "2000",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17416103081581109640542228",
+            "commission_details": {
+                "amount": 40,
+                "rate": "2.00",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031013382649722",
+    "amount": 2000,
+    "transaction_date": "2025-03-10T12:38:28.000000Z",
+    "purchased_code": "Token: 35419981304203731832",
+    "customerName": "Testmeter1",
+    "address": "Muyibat oyefusi crescent",
+    "meterNumber": null,
+    "customerNumber": "25113291196",
+    "token": "35419981304203731832",
+    "tokenAmount": "500",
+    "tokenValue": "465.12",
+    "tariff": "56.38,SDUTY:N0 ",
+    "businessCenter": null,
+    "exchangeReference": null,
+    "units": "8.2",
+    "energyAmt": "465.12",
+    "vat": "34.88",
+    "arrears": "0.00",
+    "revenueLoss": null,
+    "kct1": null,
+    "kct2": null
+}
+
+## TV -> DSTV
+{
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "DSTV Subscription",
+            "unique_element": "1212121212",
+            "unit_price": "1850",
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 27.75,
+            "total_amount": 1822.25,
+            "discount": null,
+            "type": "TV Subscription",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "convinience_fee": 0,
+            "amount": "1850",
+            "platform": "api",
+            "method": "api",
+            "transactionId": "17416009779459629327738818",
+            "commission_details": {
+                "amount": 27.75,
+                "rate": "1.50",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "requestId": "2025031011029125930",
+    "amount": 1850,
+    "transaction_date": "2025-03-10T10:02:57.000000Z",
+    "purchased_code": ""
+}
+
+## TV - Showmax
+{
+    "response_description": "TRANSACTION SUCCESSFUL",
+    "code": "000",
+    "content": {
+        "transactions": {
+            "status": "delivered",
+            "product_name": "ShowMax",
+            "unique_element": "08011111111",
+            "unit_price": 8400,
+            "quantity": 1,
+            "service_verification": null,
+            "channel": "api",
+            "commission": 84,
+            "total_amount": 8416,
+            "discount": null,
+            "type": "TV Subscription",
+            "email": "sandbox@sandbox.vtpass.com",
+            "phone": "123450987623",
+            "name": null,
+            "extras": "SHMVHXQ9L3RXGPU",
+            "convinience_fee": 100,
+            "amount": 8400,
+            "platform": "api",
+            "method": "wallet",
+            "transactionId": "17416109379361776858305486",
+            "product_id": 616,
+            "commission_details": {
+                "amount": 84,
+                "rate": "1.00",
+                "rate_type": "percent",
+                "computation_type": "default"
+            }
+        }
+    },
+    "requestId": "2025031013486732084",
+    "amount": 8400,
+    "transaction_date": "2025-03-10T12:48:57.000000Z",
+    "purchased_code": "SHMVHXQ9L3RXGPU",
+    "Voucher": [
+        "SHMVHXQ9L3RXGPU"
+    ]
+}
+
+// VTPass Validate Meter - success
+{
+    "code": "000",
+    "content": {
+        "Customer_Name": "TEST METER .",
+        "Address": "454 ABULE - EGBA BU ABULE DUTSE ",
+        "MeterNumber": "1111111111111",
+        "Min_Purchase_Amount": 0,
+        "Outstanding": 0,
+        "Customer_Arrears": null,
+        "Meter_Type": "PREPAID",
+        "WrongBillersCode": false,
+        "commission_details": {
+            "amount": null,
+            "rate": "1.50",
+            "rate_type": "percent",
+            "computation_type": "default"
+        }
+    }
+}
+
+// VTPass Validate Meter - failed
+{
+    "code": "000",
+    "content": {
+        "error": "This meter is not correct or is not a valid Abuja prepaid meter. Please check and try again",
+        "WrongBillersCode": true -> this is how to know if it fails
+    }
+}
+
+
+-----
+## VTPass Response Codes
+016	TRANSACTION FAILED	TRANSACTION FAILED
+000	TRANSACTION PROCESSED	Transaction is processed. Please check [content][transactions][status] for the status of the transaction. It would contain the actual state like initiated, pending, delivered. See the next table for more information.
+099	TRANSACTION IS PROCESSING	Transaction is currently precessing. In such situation, you should requery using your requestID to ascertain the current status of the transaction.

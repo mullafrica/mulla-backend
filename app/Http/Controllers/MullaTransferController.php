@@ -102,7 +102,7 @@ class MullaTransferController extends Controller
             'bank' => 'required'
         ]);
 
-        if ($ws->checkBalance($request->amount * BaseUrls::MULTIPLIER)) {
+        if ($ws->checkBalance($request->amount)) {
 
             $transfer = Http::withToken(env('MULLA_PAYSTACK_LIVE'))->post(BaseUrls::PAYSTACK . 'transfer', [
                 "source" => "balance",

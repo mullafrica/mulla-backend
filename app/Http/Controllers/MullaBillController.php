@@ -15,7 +15,9 @@ use App\Models\MullaUserTransactions;
 use App\Models\MullaUserTvCardNumbers;
 use App\Models\MullaUserWallets;
 use App\Services\WalletService;
+use App\Services\SafeHavenService;
 use App\Traits\Reusables;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -280,7 +282,7 @@ class MullaBillController extends Controller
         ]);
 
         if ($request->has('meter_type') && $request->has('bill') && $request->has('device_number')) {
-            // Pass the meter to this endpoint and return the response
+            // First attempt: Try VTPass validation
             $validate = Http::withHeaders([
                 'api-key' => env('VTPASS_API_KEY'),
                 'secret-key' => env('VTPASS_SEC_KEY')
@@ -290,16 +292,18 @@ class MullaBillController extends Controller
 
             $data = $validate->object();
 
-            if (!isset($data->content->error) && $validate->status() === 200) {
-                // Fetch and store data
+            // Check if VTPass validation was successful
+            if (!isset($data->content->error) && isset($validate) && $validate->status() === 200 && !($data->content->WrongBillersCode ?? false)) {
+                // VTPass validation successful
                 $device = $validate->object();
+
 
                 // Check if the meter number has two duplicates and delete only the first one
                 if (MullaUserMeterNumbers::where('meter_number', $request->device_number)->count() > 1) {
                     MullaUserMeterNumbers::where('meter_number', $request->device_number)->first()->delete();
                 }
 
-                // Store meter for user
+                // Store meter for user with VTPass as validation provider
                 MullaUserMeterNumbers::updateOrCreate([
                     'meter_number' => $request->device_number,
                     'user_id' => Auth::id(),
@@ -307,20 +311,111 @@ class MullaBillController extends Controller
                     'address' => $device->content->Address ?? '',
                     'name' => $device->content->Customer_Name ?? '',
                     'meter_type' => $device->content->Meter_Type ?? $request->meter_type,
-                    'disco' => $op_id ?? ''
+                    'disco' => $op_id ?? '',
+                    'validation_provider' => 'vtpass'
                 ]);
 
                 return response()->json([
                     'data' => [
                         "address" => $device->content->Address ?? '',
-                        "name" => $device->content->Customer_Name ?? ''
+                        "name" => $device->content->Customer_Name ?? '',
+                        "validation_provider" => "vtpass"
                     ]
                 ], 200);
+            } 
+            // VTPass validation failed - attempt SafeHaven fallback for electricity only
+            else if (isset($data->content->WrongBillersCode) && $data->content->WrongBillersCode === true) {
+                return $this->attemptSafeHavenMeterValidation($request);
             } else {
+                // Other VTPass errors (not meter validation specific)
                 return response()->json($validate->json(), 400);
             }
         } else {
             return response()->json(['error' => 'Meter or a required parameter not provided'], 400);
+        }
+    }
+
+    /**
+     * Attempt SafeHaven meter validation as fallback when VTPass fails
+     */
+    private function attemptSafeHavenMeterValidation(Request $request)
+    {
+        try {
+            // Get SafeHaven access token
+            $tokenResponse = Http::post('https://api.safehavenmfb.com/oauth2/token', [
+                'grant_type' => 'client_credentials',
+                'client_id' => env('SAFE_HAVEN_CLIENT_ID', '7e36708c22981a084fff541768f0a33e'),
+                'client_assertion' => env('SAFE_HAVEN_CLIENT_ASSERTION', 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL211bGxhLm1vbmV5Iiwic3ViIjoiN2UzNjcwOGMyMjk4MWEwODRmZmY1NDE3NjhmMGEzM2UiLCJhdWQiOiJodHRwczovL2FwaS5zYWZlaGF2ZW5tZmIuY29tIiwiaWF0IjoxNzM5OTU4MzQyLCJleHAiOjE3NzE0OTM2NDV9.JEyVWS82VscoErhhuJ2MW9qAnWWuHFsX168_Q6o0HjJR4xDaXIEm7tSEbkbvc-x-cnM9AYi30LQqyI24nFxvvY2rESGu6uG2BA0eIct-0HJHpG9Qr39ff8T_e107okPL5zMfFyPDtfaLSxAxJEWPk7moJD0pNprjF7PP6LrGdaY'),
+                'client_assertion_type' => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
+            ]);
+            
+            if (!$tokenResponse->successful() || !isset($tokenResponse->json()['access_token'])) {
+                throw new \Exception('Failed to get SafeHaven access token');
+            }
+
+            $accessToken = $tokenResponse->json()['access_token'];
+            
+            // Make SafeHaven meter validation request
+            $safeHavenResponse = Http::withToken($accessToken)
+                ->withOptions(['timeout' => 120])
+                ->post('https://api.safehavenmfb.com/vas/verify', [
+                    'serviceCategoryId' => '61efac35da92348f9dde5f77',
+                    'entityNumber' => $request->device_number
+                ]);
+
+            if ($safeHavenResponse->successful()) {
+                $safeHavenData = $safeHavenResponse->json();
+                
+                // Check if SafeHaven validation was successful
+                if (isset($safeHavenData['statusCode']) && $safeHavenData['statusCode'] === 200 && isset($safeHavenData['data'])) {
+                    // Check if the meter number has duplicates and clean up
+                    if (MullaUserMeterNumbers::where('meter_number', $request->device_number)->count() > 1) {
+                        MullaUserMeterNumbers::where('meter_number', $request->device_number)->first()->delete();
+                    }
+
+                    // Store meter for user with SafeHaven validation
+                    MullaUserMeterNumbers::updateOrCreate([
+                        'meter_number' => $request->device_number,
+                        'user_id' => Auth::id(),
+                    ], [
+                        'address' => $safeHavenData['data']['address'] ?? '',
+                        'name' => $safeHavenData['data']['name'] ?? '',
+                        'meter_type' => $safeHavenData['data']['vendType'] ?? $request->meter_type,
+                        'disco' => $safeHavenData['data']['discoCode'] ?? '',
+                        'validation_provider' => 'safehaven'
+                    ]);
+                    
+                    return response()->json([
+                        'data' => [
+                            "address" => $safeHavenData['data']['address'] ?? '',
+                            "name" => $safeHavenData['data']['name'] ?? '',
+                            "validation_provider" => "safehaven"
+                        ]
+                    ], 200);
+                } else {
+                    throw new \Exception('SafeHaven validation failed: ' . ($safeHavenData['message'] ?? 'Unknown error'));
+                }
+            } else {
+                throw new \Exception('SafeHaven API request failed: ' . $safeHavenResponse->body());
+            }
+            
+        } catch (\Exception $e) {
+            // Both VTPass and SafeHaven failed
+            DiscordBots::dispatch([
+                'message' => '❌ **Meter validation failed** - Both services unavailable',
+                'details' => [
+                    'user_id' => Auth::id(),
+                    'email' => Auth::user()->email,
+                    'meter_number' => $request->device_number,
+                    'safehaven_error' => $e->getMessage(),
+                    'timestamp' => now()->toDateTimeString()
+                ]
+            ]);
+            
+            return response()->json([
+                'error' => 'Unable to validate meter number with any service. Please check the meter number and try again.',
+                'validation_failed' => true
+            ], 400);
         }
     }
 
@@ -364,20 +459,66 @@ class MullaBillController extends Controller
     public function payVTPassBill(Request $request, WalletService $ws)
     {
         $request_id = $this->generateRequestId();
+        
+        // Check for suspicious activity - rapid payment attempts
+        $recentPayments = MullaUserTransactions::where('user_id', Auth::id())
+            ->where('created_at', '>=', now()->subMinutes(5))
+            ->count();
+            
+        if ($recentPayments >= 10) {
+            DiscordBots::dispatch([
+                'message' => '🚨 **Suspicious activity detected** - Rapid payment attempts',
+                'details' => [
+                    'user_id' => Auth::id(),
+                    'email' => Auth::user()->email,
+                    'count' => $recentPayments,
+                    'timeframe' => '5 minutes',
+                    'current_attempt' => $request->serviceID . ' - ₦' . number_format($request->amount),
+                    'ip_address' => request()->ip(),
+                    'timestamp' => now()->toDateTimeString()
+                ]
+            ]);
+        }
+        
+        // Check for repeated failed attempts on same payment reference
+        $failedAttempts = MullaUserTransactions::where('user_id', Auth::id())
+            ->where('payment_reference', $request->payment_reference)
+            ->where('status', false)
+            ->count();
+            
+        if ($failedAttempts >= 3) {
+            DiscordBots::dispatch([
+                'message' => '🔄 **Repeated failed attempts** - Same payment reference',
+                'details' => [
+                    'user_id' => Auth::id(),
+                    'email' => Auth::user()->email,
+                    'payment_reference' => $request->payment_reference,
+                    'failed_attempts' => $failedAttempts,
+                    'service' => $request->serviceID,
+                    'amount' => '₦' . number_format($request->amount),
+                    'timestamp' => now()->toDateTimeString()
+                ]
+            ]);
+        }
 
         $request->validate([
-            'payment_reference' => 'required',
-            'serviceID' => 'required',
-            'billersCode' => 'required',
-            'amount' => 'required|numeric|min:0',
-            'fromWallet' => 'required'
+            'payment_reference' => 'required|string|max:255|regex:/^[a-zA-Z0-9_-]+$/',
+            'serviceID' => 'required|string|max:100',
+            'billersCode' => 'required|string|max:50|regex:/^[0-9a-zA-Z]+$/',
+            'amount' => 'required|numeric|min:1|max:1000000',
+            'fromWallet' => 'required|boolean'
         ]);
 
-        $amount = $request->amount;
+        $amount = floatval($request->amount);
 
-        /** Check if amount is numeric and greater than 0 (whitelist) */
-        if (!is_numeric($amount) || $amount <= 0) {
-            return response()->json(['message' => 'Invalid amount provided. Please provide a valid amount.'], 400);
+        /** Enhanced amount validation */
+        if (!is_numeric($amount) || $amount <= 0 || $amount != $request->amount) {
+            return response()->json(['message' => 'Invalid amount provided. Amount must be a positive number.'], 400);
+        }
+
+        /** Prevent negative amounts and floating point manipulation */
+        if ($amount < 0 || !is_finite($amount) || is_nan($amount)) {
+            return response()->json(['message' => 'Invalid amount format.'], 400);
         }
 
         /** Check if amount is greater than 500 for electricity */
@@ -385,9 +526,34 @@ class MullaBillController extends Controller
             return response()->json(['message' => 'Minimum amount for electricity is 1000.'], 400);
         }
 
-        /** Unique payment reference for each transaction */
-        if (!MullaUserTransactions::where('payment_reference', $request->payment_reference)->where('status', false)->exists()) {
-            return response(['message' => 'Payment ref error.'], 400);
+        /** Check for existing transactions with this reference */
+        $existingTxn = MullaUserTransactions::where('payment_reference', $request->payment_reference)->first();
+        
+        if ($existingTxn && $existingTxn->status == true) {
+            return response(['message' => 'Transaction already completed successfully.'], 400);
+        }
+
+        /** For electricity: Check if this is a retry after VTPass failure */
+        if ($this->isElectricity($request->serviceID) && $existingTxn && 
+            $existingTxn->vtp_status === VTPEnums::FAILED && 
+            $existingTxn->provider === 'vtpass') {
+            // This is a retry after VTPass failed - attempt SafeHaven directly
+            return $this->attemptSafeHavenElectricity($request, $ws, $existingTxn);
+        }
+
+        /** Create pending transaction record for new attempts */
+        if (!$existingTxn) {
+            $pendingTxn = MullaUserTransactions::create([
+                'user_id' => Auth::id(),
+                'payment_reference' => $request->payment_reference,
+                'amount' => $amount,
+                'status' => false,
+                'vtp_status' => VTPEnums::PENDING,
+                'provider' => 'vtpass',
+                'created_at' => now()
+            ]);
+        } else {
+            $pendingTxn = $existingTxn;
         }
 
         /** Validate variation code if airtime or data */
@@ -445,13 +611,95 @@ class MullaBillController extends Controller
 
         $phone = Auth::user()->phone;
 
-        /** Check wallet if true */
-        if ($request->fromWallet == 'true') {
-            if (!$ws->checkBalance($amount * BaseUrls::MULTIPLIER)) {
-                return response(['message' => 'Low wallet balance.'], 200);
-            } else {
-                $ws->decrementBalance($amount);
+        /** For electricity: Check validation provider and route accordingly */
+        if ($this->isElectricity($request->serviceID)) {
+            // Check which service validated this meter to determine routing
+            $meterRecord = MullaUserMeterNumbers::where('meter_number', $request->billersCode)
+                ->where('user_id', Auth::id())
+                ->first();
+                
+            if ($meterRecord && $meterRecord->validation_provider === 'safehaven') {
+                // Meter was validated via SafeHaven, so purchase directly via SafeHaven
+                // But first, deduct wallet balance
+                if ($request->fromWallet === true || $request->fromWallet === 'true') {
+                    $userWallet = MullaUserWallets::where('user_id', Auth::id())->lockForUpdate()->first();
+                    
+                    if (!$userWallet || $userWallet->balance < $amount) {
+                        if ($pendingTxn && !$existingTxn) {
+                            $pendingTxn->delete();
+                        }
+                        
+                        DiscordBots::dispatch([
+                            'message' => '💰 **Insufficient balance** - SafeHaven direct payment blocked',
+                            'details' => [
+                                'user_id' => Auth::id(),
+                                'email' => Auth::user()->email,
+                                'service' => $request->serviceID,
+                                'requested_amount' => '₦' . number_format($amount),
+                                'wallet_balance' => '₦' . number_format($userWallet->balance ?? 0),
+                                'timestamp' => now()->toDateTimeString()
+                            ]
+                        ]);
+                        
+                        return response(['message' => 'Insufficient wallet balance.'], 400);
+                    }
+                    
+                    // Deduct amount for SafeHaven direct payment
+                    $userWallet->decrement('balance', $amount);
+                }
+                
+                DiscordBots::dispatch([
+                    'message' => '🔀 **Routing to SafeHaven** - Meter validated via SafeHaven',
+                    'details' => [
+                        'user_id' => Auth::id(),
+                        'email' => Auth::user()->email,
+                        'payment_ref' => $request->payment_reference,
+                        'service' => $request->serviceID,
+                        'amount' => '₦' . number_format($amount),
+                        'meter' => $request->billersCode,
+                        'timestamp' => now()->toDateTimeString()
+                    ]
+                ]);
+                
+                return $this->attemptSafeHavenElectricity($request, $ws, $pendingTxn);
             }
+            // If validation_provider is 'vtpass' or null, continue with VTPass first (existing logic)
+        }
+
+        /** Enhanced wallet balance validation and transaction locking */
+        if ($request->fromWallet === true || $request->fromWallet === 'true') {
+            // For new transactions (not retries), check and deduct wallet balance
+            if (!$existingTxn || $existingTxn->vtp_status !== VTPEnums::FAILED) {
+                // Lock user wallet for this transaction
+                $userWallet = MullaUserWallets::where('user_id', Auth::id())->lockForUpdate()->first();
+                
+                if (!$userWallet || $userWallet->balance < $amount) {
+                    if ($pendingTxn && !$existingTxn) {
+                        $pendingTxn->delete(); // Remove pending transaction
+                    }
+                    
+                    // Log insufficient balance
+                    DiscordBots::dispatch([
+                        'message' => '💰 **Insufficient balance** - Payment blocked',
+                        'details' => [
+                            'user_id' => Auth::id(),
+                            'email' => Auth::user()->email,
+                            'service' => $request->serviceID,
+                            'requested_amount' => '₦' . number_format($amount),
+                            'wallet_balance' => '₦' . number_format($userWallet->balance ?? 0),
+                            'shortage' => '₦' . number_format($amount - ($userWallet->balance ?? 0)),
+                            'timestamp' => now()->toDateTimeString()
+                        ]
+                    ]);
+                    
+                    return response(['message' => 'Insufficient wallet balance.'], 400);
+                }
+                
+                // Deduct amount immediately to prevent double spending
+                $userWallet->decrement('balance', $amount);
+                
+            }
+            // For retries, balance was already deducted on first attempt, so skip this check
         }
 
         /** Pay airtime or data */
@@ -482,14 +730,77 @@ class MullaBillController extends Controller
 
         /** Check if payment was successful */
         if (isset($res->code) && !in_array($res->code, ['000', '099'])) {
-            // TODO: turn on refund user when we fix the issue with validating input
-            // MullaUserWallets::where('user_id', Auth::id())->increment('balance', $amount);
-            DiscordBots::dispatch(['message' => 'An error occured, check and refund user with (ID:' . Auth::id() . ') - ' . $request->serviceID . ' ' . json_encode($res)]);
-            return response(['message' => 'An error occured, please contact support.'], 400);
+            
+            if ($this->isElectricity($request->serviceID)) {
+                // For electricity: Automatically attempt SafeHaven when VTPass fails
+                
+                $errorCode = $res->code ?? 'N/A';
+                $errorMessage = $res->response_description ?? 'Unknown error';
+                
+                $pendingTxn->update([
+                    'vtp_status' => VTPEnums::FAILED,
+                    'status' => false,
+                    'provider' => 'vtpass',
+                    'notes' => 'VTPass failed, automatically attempting SafeHaven.',
+                    'bill_reference' => $res->requestId ?? 'vtpass_failed_' . time()
+                ]);
+                
+                DiscordBots::dispatch([
+                    'message' => '⚡ **VTPass failed** - Auto-attempting SafeHaven',
+                    'details' => [
+                        'user_id' => Auth::id(),
+                        'email' => Auth::user()->email,
+                        'payment_ref' => $request->payment_reference,
+                        'service' => $request->serviceID,
+                        'amount' => '₦' . number_format($amount),
+                        'meter' => $request->billersCode,
+                        'vtpass_error' => $errorMessage,
+                        'vtpass_code' => $errorCode,
+                        'timestamp' => now()->toDateTimeString()
+                    ]
+                ]);
+                
+                // Automatically attempt SafeHaven without user intervention
+                return $this->attemptSafeHavenElectricity($request, $ws, $pendingTxn);
+                
+            } else {
+                // For non-electricity services: Refund immediately (original behavior)
+                if ($request->fromWallet === true || $request->fromWallet === 'true') {
+                    MullaUserWallets::where('user_id', Auth::id())->increment('balance', $amount);
+                }
+                
+                $pendingTxn->delete(); // Remove pending transaction
+                DiscordBots::dispatch([
+                    'message' => '❌ **Payment failed** - User refunded',
+                    'details' => [
+                        'user_id' => Auth::id(),
+                        'email' => Auth::user()->email,
+                        'service' => $request->serviceID,
+                        'amount' => '₦' . number_format($amount),
+                        'recipient' => $request->recipient ?? $request->billersCode,
+                        'vtpass_error' => $res->response_description ?? 'Unknown error',
+                        'timestamp' => now()->toDateTimeString()
+                    ]
+                ]);
+                return response(['message' => 'Service temporarily unavailable. Please try again later.'], 400);
+            }
         }
 
         /** Log the response to discord */
-        DiscordBots::dispatch(['message' => json_encode($res)]);
+        // Log successful VTPass transactions
+        DiscordBots::dispatch([
+            'message' => '✅ **Payment successful** - VTPass',
+            'details' => [
+                'user_id' => Auth::id(),
+                'email' => Auth::user()->email,
+                'service' => $request->serviceID,
+                'amount' => '₦' . number_format($amount),
+                'cashback' => '₦' . number_format($amount * $this->cashBack($request->serviceID)),
+                'recipient' => $request->recipient ?? $request->billersCode,
+                'transaction_id' => $res->requestId ?? 'N/A',
+                'timestamp' => now()->toDateTimeString()
+            ]
+        ]);
 
         /** Update cashback & wallet balance */
         if (isset($res->response_description) && $res->response_description === 'TRANSACTION SUCCESSFUL') {
@@ -550,7 +861,7 @@ class MullaBillController extends Controller
             // if ($this->isAirtime($request->serviceID)) return;
             // if ($this->isData($request->serviceID)) return;
 
-            MullaUserTransactions::updateOrCreate(
+            $txn = MullaUserTransactions::updateOrCreate(
                 [
                     'user_id' => Auth::id(),
                     'payment_reference' => $request->payment_reference
@@ -567,7 +878,11 @@ class MullaBillController extends Controller
                 ]
             );
 
-            return response()->json(['message' => 'We are processing your transaction, please wait a moment.', 'pending' => true], 200);
+            return response()->json([
+                'message' => 'We are processing your transaction, please wait a moment.', 
+                'pending' => true,
+                'transaction_id' => $txn->id
+            ], 200);
         } else {
             /**
              * We are assuming the transaction failed here, nothing
@@ -577,6 +892,221 @@ class MullaBillController extends Controller
         }
 
         return response()->json(['message' => 'An error occured, please contact support.'], 400);
+    }
+
+    /**
+     * Attempt SafeHaven electricity payment
+     * Called either:
+     * 1. As fallback when VTPass fails (wallet already deducted)
+     * 2. Direct routing when meter was validated via SafeHaven (wallet already deducted)
+     */
+    private function attemptSafeHavenElectricity(Request $request, WalletService $ws, $pendingTxn)
+    {
+        try {
+            // Note: Wallet balance was already deducted before calling this method
+            
+            // Get SafeHaven access token
+            $tokenResponse = Http::post('https://api.safehavenmfb.com/oauth2/token', [
+                'grant_type' => 'client_credentials',
+                'client_id' => env('SAFE_HAVEN_CLIENT_ID', '7e36708c22981a084fff541768f0a33e'),
+                'client_assertion' => env('SAFE_HAVEN_CLIENT_ASSERTION', 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL211bGxhLm1vbmV5Iiwic3ViIjoiN2UzNjcwOGMyMjk4MWEwODRmZmY1NDE3NjhmMGEzM2UiLCJhdWQiOiJodHRwczovL2FwaS5zYWZlaGF2ZW5tZmIuY29tIiwiaWF0IjoxNzM5OTU4MzQyLCJleHAiOjE3NzE0OTM2NDV9.JEyVWS82VscoErhhuJ2MW9qAnWWuHFsX168_Q6o0HjJR4xDaXIEm7tSEbkbvc-x-cnM9AYi30LQqyI24nFxvvY2rESGu6uG2BA0eIct-0HJHpG9Qr39ff8T_e107okPL5zMfFyPDtfaLSxAxJEWPk7moJD0pNprjF7PP6LrGdaY'),
+                'client_assertion_type' => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
+            ]);
+            
+            if (!$tokenResponse->successful() || !isset($tokenResponse->json()['access_token'])) {
+                throw new \Exception('Failed to get SafeHaven access token');
+            }
+
+            $accessToken = $tokenResponse->json()['access_token'];
+            
+            // Determine meter type for SafeHaven
+            $vendType = strtoupper($request->meter_type ?? 'PREPAID');
+            
+            $paymentData = [
+                'serviceCategoryId' => '61efac35da92348f9dde5f77',
+                'amount' => intval($request->amount), // SafeHaven expects amount in Naira, not kobo
+                'channel' => 'WEB',
+                'debitAccountNumber' => env('SAFE_HAVEN_DEBIT_ACCOUNT', '0111124637'),
+                'meterNumber' => $request->billersCode,
+                'vendType' => $vendType
+            ];
+            
+            // Make SafeHaven electricity payment
+            $safeHavenResponse = Http::withToken($accessToken)
+                ->withOptions(['timeout' => 120])
+                ->post('https://api.safehavenmfb.com/vas/pay/utility', $paymentData);
+
+            if ($safeHavenResponse->successful()) {
+                $safeHavenData = $safeHavenResponse->json();
+                
+                // Check if SafeHaven transaction was actually successful
+                if (isset($safeHavenData['data']['status']) && $safeHavenData['data']['status'] === 'successful') {
+                    // Update transaction with SafeHaven success
+                    $txn = MullaUserTransactions::updateOrCreate(
+                        [
+                            'user_id' => Auth::id(),
+                            'payment_reference' => $request->payment_reference
+                        ],
+                        [
+                            'bill_reference' => $safeHavenData['data']['reference'] ?? 'SH-' . time(),
+                            'amount' => $request->amount,
+                            'cashback' => $request->amount * $this->cashBack($request->serviceID),
+                            'bill_token' => $safeHavenData['data']['utilityToken'] ?? '',
+                            'bill_units' => $safeHavenData['data']['metaData']['units'] ?? '',
+                            'vat' => $safeHavenData['data']['metaData']['tax'] ?? 0,
+                            'bill_device_id' => $request->billersCode,
+                            'type' => 'Electricity Bill',
+                            'product_name' => ($safeHavenData['data']['metaData']['disco'] ?? 'Unknown') . ' Electricity',
+                            'unique_element' => $request->billersCode,
+                            'vtp_request_id' => $safeHavenData['data']['id'] ?? null,
+                            'vtp_status' => VTPEnums::SUCCESS,
+                            'status' => true,
+                            'provider' => 'safehaven',
+                            'notes' => 'Processed via SafeHaven fallback after VTPass failure. Receipt: ' . ($safeHavenData['data']['metaData']['receiptNo'] ?? 'N/A')
+                        ]
+                    );
+
+                // Credit cashback
+                MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
+                    ->increment('balance', $request->amount * $this->cashBack($request->serviceID));
+
+                MullaUserWallets::updateOrCreate(['user_id' => Auth::id()])
+                    ->increment('balance', $request->amount * $this->cashBack($request->serviceID));
+
+                // Send success email
+                Jobs::dispatch([
+                    'type' => 'transaction_successful',
+                    'email' => Auth::user()->email,
+                    'firstname' => Auth::user()->firstname,
+                    'transfer' => '',
+                    'utility' => 'Electricity Bill',
+                    'amount' => $txn->amount,
+                    'date' => $txn->date ?? now()->format('D dS M \a\t h:i A'),
+                    'cashback' => $txn->cashback,
+                    'code' => $txn->voucher_code ?? '',
+                    'serial' => '',
+                    'units' => $txn->bill_units ?? '',
+                    'device_id' => $txn->bill_device_id ?? '',
+                    'token' => $txn->bill_token ?? '',
+                    'txn_type' => $txn->type ?? 'electricity',
+                    'transaction_reference' => $txn->payment_reference,
+                    'created_at' => Carbon::now()->toDateTimeString(),
+                ]);
+
+                DiscordBots::dispatch([
+                    'message' => '✅ **Payment successful** - SafeHaven fallback',
+                    'details' => [
+                        'user_id' => Auth::id(),
+                        'email' => Auth::user()->email,
+                        'payment_ref' => $request->payment_reference,
+                        'service' => $request->serviceID,
+                        'amount' => '₦' . number_format($request->amount),
+                        'cashback' => '₦' . number_format($request->amount * $this->cashBack($request->serviceID)),
+                        'meter' => $request->billersCode,
+                        'token' => $safeHavenData['data']['utilityToken'] ?? 'N/A',
+                        'units' => $safeHavenData['data']['metaData']['units'] ?? 'N/A',
+                        'timestamp' => now()->toDateTimeString()
+                    ]
+                ]);
+                
+                    return response()->json([
+                        'message' => 'Payment successful via SafeHaven',
+                        'data' => $txn,
+                        'provider' => 'safehaven'
+                    ], 200);
+                } else if (isset($safeHavenData['data']['status']) && $safeHavenData['data']['status'] === 'pending') {
+                    // Handle SafeHaven pending transactions
+                    $pendingTxn->update([
+                        'bill_reference' => $safeHavenData['data']['reference'] ?? 'SH-PENDING-' . time(),
+                        'vtp_status' => VTPEnums::PENDING,
+                        'provider' => 'safehaven',
+                        'notes' => 'SafeHaven transaction pending. Reference: ' . ($safeHavenData['data']['reference'] ?? 'N/A'),
+                        'vtp_request_id' => $safeHavenData['data']['id'] ?? null
+                    ]);
+                    
+                    DiscordBots::dispatch([
+                        'message' => '⏳ **Transaction pending** - SafeHaven processing',
+                        'details' => [
+                            'user_id' => Auth::id(),
+                            'email' => Auth::user()->email,
+                            'payment_ref' => $request->payment_reference,
+                            'service' => $request->serviceID,
+                            'amount' => '₦' . number_format($request->amount),
+                            'meter' => $request->billersCode,
+                            'safehaven_ref' => $safeHavenData['data']['reference'] ?? 'N/A',
+                            'timestamp' => now()->toDateTimeString()
+                        ]
+                    ]);
+                    
+                    return response()->json([
+                        'message' => 'Transaction is processing via SafeHaven. Please wait a moment.',
+                        'pending' => true,
+                        'provider' => 'safehaven'
+                    ], 200);
+                } else {
+                    // Log SafeHaven transaction failure (successful HTTP but failed transaction)
+                    DiscordBots::dispatch([
+                        'message' => '❌ **SafeHaven transaction failed** - Service error',
+                        'details' => [
+                            'user_id' => Auth::id(),
+                            'email' => Auth::user()->email,
+                            'payment_ref' => $request->payment_reference,
+                            'transaction_status' => $safeHavenData['data']['status'] ?? 'N/A',
+                            'error_message' => $safeHavenData['message'] ?? 'Unknown error',
+                            'timestamp' => now()->toDateTimeString()
+                        ]
+                    ]);
+                    
+                    throw new \Exception('SafeHaven transaction failed: ' . ($safeHavenData['message'] ?? 'Unknown error'));
+                }
+            } else {
+                // Log detailed SafeHaven failure
+                DiscordBots::dispatch([
+                    'message' => '❌ **SafeHaven API failed** - Network error',
+                    'details' => [
+                        'user_id' => Auth::id(),
+                        'email' => Auth::user()->email,
+                        'payment_ref' => $request->payment_reference,
+                        'http_status' => $safeHavenResponse->status(),
+                        'timestamp' => now()->toDateTimeString()
+                    ]
+                ]);
+                
+                throw new \Exception('SafeHaven API request failed. HTTP Status: ' . $safeHavenResponse->status() . '. Response: ' . $safeHavenResponse->body());
+            }
+            
+        } catch (\Exception $e) {
+            // Both VTPass and SafeHaven failed - NOW refund user (this is the second failure)
+            if ($request->fromWallet === true || $request->fromWallet === 'true') {
+                MullaUserWallets::where('user_id', Auth::id())->increment('balance', $request->amount);
+            }
+            
+            $pendingTxn->update([
+                'vtp_status' => VTPEnums::FAILED,
+                'status' => false,
+                'provider' => 'both_failed',
+                'notes' => 'VTPass failed on first attempt, SafeHaven failed on retry. User refunded. Error: ' . $e->getMessage()
+            ]);
+
+            DiscordBots::dispatch([
+                'message' => '❌ **Both services failed** - User refunded',
+                'details' => [
+                    'user_id' => Auth::id(),
+                    'email' => Auth::user()->email,
+                    'payment_ref' => $request->payment_reference,
+                    'service' => $request->serviceID,
+                    'amount' => '₦' . number_format($request->amount),
+                    'meter' => $request->billersCode,
+                    'safehaven_error' => $e->getMessage(),
+                    'timestamp' => now()->toDateTimeString()
+                ]
+            ]);
+            
+            return response()->json([
+                'message' => 'Payment failed on both services. Your wallet has been refunded.',
+                'refunded' => true,
+            ], 400);
+        }
     }
 
     private function generateRequestId(): string
@@ -651,6 +1181,20 @@ class MullaBillController extends Controller
             return response()->json(['message' => 'Transaction has been reversed.'], 400);
         }
 
+        // Log requery attempt
+        DiscordBots::dispatch([
+            'message' => '🔍 **Requery attempt** - Checking transaction status',
+            'details' => [
+                'user_id' => Auth::id(),
+                'email' => Auth::user()->email,
+                'transaction_id' => $txn->id,
+                'payment_ref' => $txn->payment_reference,
+                'current_status' => $txn->vtp_status,
+                'provider' => $txn->provider ?? 'vtpass',
+                'timestamp' => now()->toDateTimeString()
+            ]
+        ]);
+
         $pay = Http::withHeaders([
             'api-key' => env('VTPASS_API_KEY'),
             'secret-key' => env('VTPASS_SEC_KEY')
@@ -718,7 +1262,17 @@ class MullaBillController extends Controller
 
             return response($txn, 200);
         } else if ($res->code === '040' && $res->content->transactions->status === 'reversed') {
-            DiscordBots::dispatch(['message' => 'Transaction - ' . $res->content->transactions->type . ' - has been reversed, user has been refunded (ID:' . Auth::id() . ')']);
+            DiscordBots::dispatch([
+                'message' => '🔄 **Transaction reversed** - User refunded',
+                'details' => [
+                    'user_id' => Auth::id(),
+                    'email' => Auth::user()->email,
+                    'transaction_id' => $txn->id,
+                    'payment_ref' => $txn->payment_reference,
+                    'amount' => '₦' . number_format($txn->amount),
+                    'timestamp' => now()->toDateTimeString()
+                ]
+            ]);
             MullaUserTransactions::where('id', $txn->id)->update(['vtp_status' => VTPEnums::REVERSED]);
             MullaUserWallets::where('user_id', Auth::id())->increment('balance', $txn->amount);
             return response(['message' => 'Transaction reversed.'], 400);

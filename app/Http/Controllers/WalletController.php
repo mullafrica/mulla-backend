@@ -57,7 +57,7 @@ class WalletController extends Controller
             'amount' => 'required|numeric|min:50',
         ]);
 
-        if ($ws->checkBalance($request->amount * BaseUrls::MULTIPLIER)) {
+        if ($ws->checkBalance($request->amount)) {
 
             $m = MullaUserTransactions::create(
                 [

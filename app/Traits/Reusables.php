@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 
 trait Reusables
 {
-    protected function sendToDiscord($message)
+    protected function sendToDiscord($message, $details = [])
     {
         $webhookUrl = env('DISCORD_WEBHOOK_URL');
 
@@ -19,10 +19,33 @@ trait Reusables
 
         $client = new Client();  // Instantiate Guzzle HTTP client
 
+        $payload = ['content' => $message];
+
+        // If details exist, format them as an embed
+        if (!empty($details)) {
+            $embed = [
+                'title' => 'Details',
+                'color' => 0x3498db, // Blue color
+                'fields' => [],
+                'timestamp' => now()->toISOString()
+            ];
+
+            foreach ($details as $key => $value) {
+                // Skip empty values
+                if ($value === null || $value === '') continue;
+                
+                $embed['fields'][] = [
+                    'name' => ucwords(str_replace('_', ' ', $key)),
+                    'value' => is_array($value) ? json_encode($value, JSON_PRETTY_PRINT) : (string)$value,
+                    'inline' => true
+                ];
+            }
+
+            $payload['embeds'] = [$embed];
+        }
+
         $client->post($webhookUrl, [
-            'json' => [
-                'content' => $message
-            ]
+            'json' => $payload
         ]);
     }
 

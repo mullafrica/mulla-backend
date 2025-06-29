@@ -18,7 +18,7 @@ class WalletService implements IWalletService
 
     public function checkBalance(int $amount)
     {
-        if (User::where('id', Auth::id())->first()->wallet * BaseUrls::MULTIPLIER >= $amount) {
+        if (User::where('id', Auth::id())->first()->wallet >= $amount) {
             return true;
         } else {
             return false;

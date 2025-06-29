@@ -39,6 +39,37 @@ class Handler extends ExceptionHandler
         });
 
         $this->reportable(function (Throwable $e) {
+            // Enhanced Discord logging for system errors
+            $user = auth()->user();
+            $request = request();
+            
+            \App\Jobs\DiscordBots::dispatch([
+                'message' => '🚨 SYSTEM ERROR',
+                'details' => [
+                    'error_type' => get_class($e),
+                    'message' => $e->getMessage(),
+                    'file' => basename($e->getFile()),
+                    'line' => $e->getLine(),
+                    'code' => $e->getCode(),
+                    'user_id' => $user ? $user->id : 'Guest',
+                    'user_email' => $user ? $user->email : 'N/A',
+                    'route' => $request->route() ? $request->route()->getName() : 'Unknown',
+                    'method' => $request->method(),
+                    'url' => $request->fullUrl(),
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'timestamp' => now()->toDateTimeString(),
+                    'trace' => collect($e->getTrace())->take(3)->map(function ($trace) {
+                        return [
+                            'file' => basename($trace['file'] ?? 'unknown'),
+                            'line' => $trace['line'] ?? 'unknown',
+                            'function' => $trace['function'] ?? 'unknown'
+                        ];
+                    })->toArray()
+                ]
+            ]);
+            
+            // Keep the original simple message for backup
             $message = sprintf(
                 "Error: %s \nFile: %s \nLine: %s \nCode: %s",
                 $e->getMessage(),
