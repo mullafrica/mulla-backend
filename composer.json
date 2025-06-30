@@ -12,7 +12,6 @@
         "guzzlehttp/guzzle": "^7.2",
         "hisorange/browser-detect": "^5.0",
         "laravel/framework": "^10.10",
-        "laravel/nightwatch": "^1.7",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
         "predis/predis": "^2.0",

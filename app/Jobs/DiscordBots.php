@@ -14,6 +14,12 @@ class DiscordBots implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, Reusables;
 
     public $data;
+    
+    // Job configuration to prevent infinite retries
+    public $tries = 3;
+    public $timeout = 30;
+    public $maxExceptions = 3;
+
     /**
      * Create a new job instance.
      */
