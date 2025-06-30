@@ -1031,11 +1031,16 @@ class MullaBillControllerTest extends TestCase
                 'serviceID' => $testCase['serviceID'],
                 'billersCode' => $testCase['type'] === 'electricity' ? '12345678901' : '08123456789',
                 'amount' => $testCase['amount'],
-                'fromWallet' => true,
-                'variation_code' => $testCase['type'] === 'electricity' ? 'prepaid' : null,
-                'meter_type' => $testCase['type'] === 'electricity' ? 'prepaid' : null,
-                'recipient' => $testCase['type'] === 'airtime' ? '08123456789' : null
+                'fromWallet' => true
             ];
+
+            // Add conditional fields based on service type
+            if ($testCase['type'] === 'electricity') {
+                $paymentData['variation_code'] = 'prepaid';
+                $paymentData['meter_type'] = 'prepaid';
+            } elseif ($testCase['type'] === 'airtime') {
+                $paymentData['recipient'] = '08123456789';
+            }
 
             $response = $this->postJson('/v1/comet/bill/pay', $paymentData);
             $response->assertStatus(200);

@@ -79,7 +79,7 @@ class MullaAuthController extends Controller
 
                 // Enhanced Discord logging for successful login
                 DiscordBots::dispatch([
-                    'message' => '🔒✅ USER LOGIN SUCCESS',
+                    'message' => '🔒 **User login successful**',
                     'details' => [
                         'user_id' => $user->id,
                         'email' => $user->email,
@@ -102,7 +102,7 @@ class MullaAuthController extends Controller
             } else {
                 // Log failed password attempt
                 DiscordBots::dispatch([
-                    'message' => '🔒❌ LOGIN FAILED - Wrong Password',
+                    'message' => '🔒 **Login failed - Wrong password**',
                     'details' => [
                         'phone' => $request->phone,
                         'user_exists' => 'YES',
@@ -124,7 +124,7 @@ class MullaAuthController extends Controller
         } else {
             // Log failed login attempt for non-existent user
             DiscordBots::dispatch([
-                'message' => '🔒❌ LOGIN FAILED - User Not Found',
+                'message' => '🔒 **Login failed - User not found**',
                 'details' => [
                     'phone' => $request->phone,
                     'user_exists' => 'NO',
@@ -244,7 +244,19 @@ class MullaAuthController extends Controller
             'platform' => $platform,
         ]);
 
-        $this->sendToDiscord($user->firstname . ', ' . $user->email . ' just created an account!');
+        DiscordBots::dispatch([
+            'message' => '🎉 **New user registration**',
+            'details' => [
+                'user_id' => $user->id,
+                'name' => $user->firstname . ' ' . $user->lastname,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'ip_address' => request()->ip(),
+                'browser' => $browser,
+                'platform' => $platform,
+                'timestamp' => now()->toDateTimeString()
+            ]
+        ]);
 
         return response()->json([
             'message' => 'User created successfully.',
@@ -325,7 +337,21 @@ class MullaAuthController extends Controller
             'bank_code' => $request->bank_code,
         ]);
 
-        $this->sendToDiscord($user->firstname . ', ' . $user->email . ' just created an account and is being verified!');
+        DiscordBots::dispatch([
+            'message' => '🎉 **New user registration with verification**',
+            'details' => [
+                'user_id' => $user->id,
+                'name' => $user->firstname . ' ' . $user->lastname,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'bvn_provided' => 'Yes',
+                'bank_account' => $request->bank_name . ' - ' . $request->nuban,
+                'ip_address' => request()->ip(),
+                'browser' => $browser,
+                'platform' => $platform,
+                'timestamp' => now()->toDateTimeString()
+            ]
+        ]);
 
         return response()->json([
             'message' => 'User created successfully.',

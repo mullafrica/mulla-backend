@@ -38,72 +38,6 @@ class MullaBillController extends Controller
         return "https://vtpass.com/api/";
     }
 
-    // A
-    public function getOperators(Request $request)
-    {
-        if ($request->has('bill')) {
-            // Pass the bill to this endpoint and return the response
-            $ops = Http::withToken(env('BLOC_KEY'))->get('https://api.blochq.io/v1/bills/operators?bill=' . $request->bill);
-
-            if ($ops->successful()) {
-                return response()->json($ops->json(), 200);
-            } else {
-                return response()->json($ops->json(), 400);
-            }
-        } else {
-            return response()->json(['error' => 'Bill not provided'], 400);
-        }
-    }
-
-    // B
-    public function getOperatorProducts($operatorId, $bill)
-    {
-        $pid = Http::withToken(env('BLOC_KEY'))->get('https://api.blochq.io/v1/bills/operators/' . $operatorId . '/products?bill=' . $bill);
-        return $pid->json();
-    }
-
-    // C
-    public function validateMeter(Request $request, $op_id)
-    {
-        $request->validate([
-            'meter_type' => 'required',
-            'bill' => 'required',
-            'device_number' => 'required'
-        ]);
-
-        if ($request->has('meter_type') && $request->has('bill') && $request->has('device_number')) {
-            // Pass the meter to this endpoint and return the response
-            $validate = Http::withToken(env('BLOC_KEY'))->withOptions([
-                'timeout' => 120,
-            ])->get('https://api.blochq.io/v1/bills/customer/validate/' . $op_id, [
-                'bill' => $request->bill,
-                'meter_type' => $request->meter_type,
-                'device_number' => $request->device_number
-            ]);
-
-            if ($validate->successful()) {
-                // Fetch and store data
-                $device = $validate->object();
-
-                // Store meter for user
-                MullaUserMeterNumbers::updateOrCreate([
-                    'meter_number' => $request->device_number,
-                    'user_id' => Auth::id(),
-                ], [
-                    'user_id' => Auth::id(),
-                    'name' => $device->data->name,
-                    'meter_type' => $request->meter_type,
-                    'address' => $device->data->address
-                ]);
-                return response()->json($validate->json(), 200);
-            } else {
-                return response()->json($validate->json(), 400);
-            }
-        } else {
-            return response()->json(['error' => 'Meter or a required parameter not provided'], 400);
-        }
-    }
-
     public function getUserMeters()
     {
         $value = MullaUserMeterNumbers::where('user_id', Auth::id())->get();
@@ -126,75 +60,6 @@ class MullaBillController extends Controller
     {
         $value = MullaUserInternetDataNumbers::where('user_id', Auth::id())->get();
         return response()->json($value, 200);
-    }
-
-    public function payABill(Request $request)
-    {
-        $request->validate([
-            'bill' => 'required',
-            'email' => 'required',
-            'operator_id' => 'required',
-            'amount' => 'required'
-        ]);
-
-        // if amount negative
-        if ($request->amount < 0) {
-            return response()->json(['error' => 'Amount cannot be negative'], 400);
-        }
-
-        if ($request->bill == 'electricity') {
-            $request->validate([
-                'meter_type' => 'required',
-                'device_number' => 'required',
-            ]);
-        }
-
-        // Get product id if the bill is electricity
-        $op_id = $this->getOperatorProducts($request->operator_id, $request->bill);
-        if ($op_id['success'] === true) {
-            $product_id = $op_id['data'][0]['id'];
-        } else {
-            return response()->json($op_id, 400);
-        }
-
-        $data = [
-            "device_details" => [
-                "meter_type" => $request->meter_type,
-                "device_number" => $request->device_number,
-                "beneficiary_msisdn" => $request->beneficiary_msisdn
-            ],
-
-            "meta_data" => [
-                "email" => $request->email,
-            ],
-
-            "operator_id" => $request->operator_id,
-            "product_id" => $product_id,
-            "amount" => $request->amount * 100,
-        ];
-
-        // Pass the bill to this endpoint and return the response
-        $pay = Http::withToken(env('BLOC_KEY'))->withOptions([
-            'timeout' => 120,
-        ])->post('https://api.blochq.io/v1/bills/payment?bill=' . $request->bill, $data);
-
-        if ($pay->successful()) {
-            /**
-             * TODO: Implement cashback functionality
-             * I am capping all cashback to 1.5% for now
-             * Credit wallet with 1.5% cashback
-             */
-
-            // Credit cashback wallet with 1.5% cashback
-            MullaUserCashbackWallets::updateOrCreate(['user_id' => Auth::id()])
-                ->increment('balance', $request->amount * 0.015);
-
-            return response()->json(['res' => $pay->json(), 'message' => 'Payment successful'], 200);
-        } else {
-            return response()->json(['res' => $pay->json(), 'message' => 'Something went wrong, try again later.'], 400);
-        }
-
-        return $pay->json();
     }
 
     /** 
@@ -336,24 +201,35 @@ class MullaBillController extends Controller
     }
 
     /**
+     * Get SafeHaven access token with caching
+     */
+    private function getSafeHavenToken()
+    {
+        // Check cache first (tokens last ~40 minutes, cache for 35 minutes to be safe)
+        return Cache::remember('safehaven_access_token', 35 * 60, function () {
+            $tokenResponse = Http::timeout(30)->post('https://api.safehavenmfb.com/oauth2/token', [
+                'grant_type' => 'client_credentials',
+                'client_id' => env('SAFE_HAVEN_CLIENT_ID'),
+                'client_assertion' => env('SAFE_HAVEN_CLIENT_ASSERTION'),
+                'client_assertion_type' => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
+            ]);
+            
+            if (!$tokenResponse->successful() || !isset($tokenResponse->json()['access_token'])) {
+                throw new \Exception('Failed to get SafeHaven access token: ' . $tokenResponse->body());
+            }
+
+            return $tokenResponse->json()['access_token'];
+        });
+    }
+
+    /**
      * Attempt SafeHaven meter validation as fallback when VTPass fails
      */
     private function attemptSafeHavenMeterValidation(Request $request)
     {
         try {
-            // Get SafeHaven access token
-            $tokenResponse = Http::post('https://api.safehavenmfb.com/oauth2/token', [
-                'grant_type' => 'client_credentials',
-                'client_id' => env('SAFE_HAVEN_CLIENT_ID', '7e36708c22981a084fff541768f0a33e'),
-                'client_assertion' => env('SAFE_HAVEN_CLIENT_ASSERTION', 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL211bGxhLm1vbmV5Iiwic3ViIjoiN2UzNjcwOGMyMjk4MWEwODRmZmY1NDE3NjhmMGEzM2UiLCJhdWQiOiJodHRwczovL2FwaS5zYWZlaGF2ZW5tZmIuY29tIiwiaWF0IjoxNzM5OTU4MzQyLCJleHAiOjE3NzE0OTM2NDV9.JEyVWS82VscoErhhuJ2MW9qAnWWuHFsX168_Q6o0HjJR4xDaXIEm7tSEbkbvc-x-cnM9AYi30LQqyI24nFxvvY2rESGu6uG2BA0eIct-0HJHpG9Qr39ff8T_e107okPL5zMfFyPDtfaLSxAxJEWPk7moJD0pNprjF7PP6LrGdaY'),
-                'client_assertion_type' => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
-            ]);
-            
-            if (!$tokenResponse->successful() || !isset($tokenResponse->json()['access_token'])) {
-                throw new \Exception('Failed to get SafeHaven access token');
-            }
-
-            $accessToken = $tokenResponse->json()['access_token'];
+            // Get cached or fresh SafeHaven access token
+            $accessToken = $this->getSafeHavenToken();
             
             // Make SafeHaven meter validation request
             $safeHavenResponse = Http::withToken($accessToken)
@@ -503,10 +379,13 @@ class MullaBillController extends Controller
 
         $request->validate([
             'payment_reference' => 'required|string|max:255|regex:/^[a-zA-Z0-9_-]+$/',
-            'serviceID' => 'required|string|max:100',
+            'serviceID' => 'required|string|max:100|regex:/^[a-zA-Z0-9-]+$/',
             'billersCode' => 'required|string|max:50|regex:/^[0-9a-zA-Z]+$/',
             'amount' => 'required|numeric|min:1|max:1000000',
-            'fromWallet' => 'required|boolean'
+            'fromWallet' => 'required|boolean',
+            'meter_type' => 'sometimes|string|in:prepaid,postpaid',
+            'variation_code' => 'sometimes|string|max:50|regex:/^[a-zA-Z0-9_-]+$/',
+            'recipient' => 'sometimes|string|regex:/^[0-9]{11}$/'
         ]);
 
         $amount = floatval($request->amount);
@@ -622,30 +501,37 @@ class MullaBillController extends Controller
                 // Meter was validated via SafeHaven, so purchase directly via SafeHaven
                 // But first, deduct wallet balance
                 if ($request->fromWallet === true || $request->fromWallet === 'true') {
-                    $userWallet = MullaUserWallets::where('user_id', Auth::id())->lockForUpdate()->first();
-                    
-                    if (!$userWallet || $userWallet->balance < $amount) {
-                        if ($pendingTxn && !$existingTxn) {
-                            $pendingTxn->delete();
-                        }
-                        
-                        DiscordBots::dispatch([
-                            'message' => '💰 **Insufficient balance** - SafeHaven direct payment blocked',
-                            'details' => [
-                                'user_id' => Auth::id(),
-                                'email' => Auth::user()->email,
-                                'service' => $request->serviceID,
-                                'requested_amount' => '₦' . number_format($amount),
-                                'wallet_balance' => '₦' . number_format($userWallet->balance ?? 0),
-                                'timestamp' => now()->toDateTimeString()
-                            ]
-                        ]);
-                        
-                        return response(['message' => 'Insufficient wallet balance.'], 400);
+                    try {
+                        // Use database transaction for atomic wallet operations
+                        DB::transaction(function () use ($request, $amount, $pendingTxn, $existingTxn) {
+                            $userWallet = MullaUserWallets::where('user_id', Auth::id())->lockForUpdate()->first();
+                            
+                            if (!$userWallet || $userWallet->balance < $amount) {
+                                if ($pendingTxn && !$existingTxn) {
+                                    $pendingTxn->delete();
+                                }
+                                
+                                DiscordBots::dispatch([
+                                    'message' => '💰 **Insufficient balance** - SafeHaven direct payment blocked',
+                                    'details' => [
+                                        'user_id' => Auth::id(),
+                                        'email' => Auth::user()->email,
+                                        'service' => $request->serviceID,
+                                        'requested_amount' => '₦' . number_format($amount),
+                                        'wallet_balance' => '₦' . number_format($userWallet->balance ?? 0),
+                                        'timestamp' => now()->toDateTimeString()
+                                    ]
+                                ]);
+                                
+                                throw new \Exception('Insufficient wallet balance.');
+                            }
+                            
+                            // Deduct amount for SafeHaven direct payment
+                            $userWallet->decrement('balance', $amount);
+                        });
+                    } catch (\Exception $e) {
+                        return response(['message' => $e->getMessage()], 400);
                     }
-                    
-                    // Deduct amount for SafeHaven direct payment
-                    $userWallet->decrement('balance', $amount);
                 }
                 
                 DiscordBots::dispatch([
@@ -670,34 +556,40 @@ class MullaBillController extends Controller
         if ($request->fromWallet === true || $request->fromWallet === 'true') {
             // For new transactions (not retries), check and deduct wallet balance
             if (!$existingTxn || $existingTxn->vtp_status !== VTPEnums::FAILED) {
-                // Lock user wallet for this transaction
-                $userWallet = MullaUserWallets::where('user_id', Auth::id())->lockForUpdate()->first();
-                
-                if (!$userWallet || $userWallet->balance < $amount) {
-                    if ($pendingTxn && !$existingTxn) {
-                        $pendingTxn->delete(); // Remove pending transaction
-                    }
-                    
-                    // Log insufficient balance
-                    DiscordBots::dispatch([
-                        'message' => '💰 **Insufficient balance** - Payment blocked',
-                        'details' => [
-                            'user_id' => Auth::id(),
-                            'email' => Auth::user()->email,
-                            'service' => $request->serviceID,
-                            'requested_amount' => '₦' . number_format($amount),
-                            'wallet_balance' => '₦' . number_format($userWallet->balance ?? 0),
-                            'shortage' => '₦' . number_format($amount - ($userWallet->balance ?? 0)),
-                            'timestamp' => now()->toDateTimeString()
-                        ]
-                    ]);
-                    
-                    return response(['message' => 'Insufficient wallet balance.'], 400);
+                try {
+                    // Use database transaction for atomic wallet operations
+                    DB::transaction(function () use ($request, $amount, $pendingTxn, $existingTxn) {
+                        // Lock user wallet for this transaction
+                        $userWallet = MullaUserWallets::where('user_id', Auth::id())->lockForUpdate()->first();
+                        
+                        if (!$userWallet || $userWallet->balance < $amount) {
+                            if ($pendingTxn && !$existingTxn) {
+                                $pendingTxn->delete(); // Remove pending transaction
+                            }
+                            
+                            // Log insufficient balance
+                            DiscordBots::dispatch([
+                                'message' => '💰 **Insufficient balance** - Payment blocked',
+                                'details' => [
+                                    'user_id' => Auth::id(),
+                                    'email' => Auth::user()->email,
+                                    'service' => $request->serviceID,
+                                    'requested_amount' => '₦' . number_format($amount),
+                                    'wallet_balance' => '₦' . number_format($userWallet->balance ?? 0),
+                                    'shortage' => '₦' . number_format($amount - ($userWallet->balance ?? 0)),
+                                    'timestamp' => now()->toDateTimeString()
+                                ]
+                            ]);
+                            
+                            throw new \Exception('Insufficient wallet balance.');
+                        }
+                        
+                        // Deduct amount immediately to prevent double spending
+                        $userWallet->decrement('balance', $amount);
+                    });
+                } catch (\Exception $e) {
+                    return response(['message' => $e->getMessage()], 400);
                 }
-                
-                // Deduct amount immediately to prevent double spending
-                $userWallet->decrement('balance', $amount);
-                
             }
             // For retries, balance was already deducted on first attempt, so skip this check
         }
@@ -766,7 +658,26 @@ class MullaBillController extends Controller
             } else {
                 // For non-electricity services: Refund immediately (original behavior)
                 if ($request->fromWallet === true || $request->fromWallet === 'true') {
-                    MullaUserWallets::where('user_id', Auth::id())->increment('balance', $amount);
+                    try {
+                        // Use database transaction for atomic refund operation
+                        DB::transaction(function () use ($amount) {
+                            $userWallet = MullaUserWallets::where('user_id', Auth::id())->lockForUpdate()->first();
+                            if ($userWallet) {
+                                $userWallet->increment('balance', $amount);
+                            }
+                        });
+                    } catch (\Exception $refundException) {
+                        DiscordBots::dispatch([
+                            'message' => '🚨 **CRITICAL: Refund failed** - Manual intervention needed',
+                            'details' => [
+                                'user_id' => Auth::id(),
+                                'email' => Auth::user()->email,
+                                'amount_to_refund' => '₦' . number_format($amount),
+                                'refund_error' => $refundException->getMessage(),
+                                'timestamp' => now()->toDateTimeString()
+                            ]
+                        ]);
+                    }
                 }
                 
                 $pendingTxn->delete(); // Remove pending transaction
@@ -905,19 +816,8 @@ class MullaBillController extends Controller
         try {
             // Note: Wallet balance was already deducted before calling this method
             
-            // Get SafeHaven access token
-            $tokenResponse = Http::post('https://api.safehavenmfb.com/oauth2/token', [
-                'grant_type' => 'client_credentials',
-                'client_id' => env('SAFE_HAVEN_CLIENT_ID', '7e36708c22981a084fff541768f0a33e'),
-                'client_assertion' => env('SAFE_HAVEN_CLIENT_ASSERTION', 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL211bGxhLm1vbmV5Iiwic3ViIjoiN2UzNjcwOGMyMjk4MWEwODRmZmY1NDE3NjhmMGEzM2UiLCJhdWQiOiJodHRwczovL2FwaS5zYWZlaGF2ZW5tZmIuY29tIiwiaWF0IjoxNzM5OTU4MzQyLCJleHAiOjE3NzE0OTM2NDV9.JEyVWS82VscoErhhuJ2MW9qAnWWuHFsX168_Q6o0HjJR4xDaXIEm7tSEbkbvc-x-cnM9AYi30LQqyI24nFxvvY2rESGu6uG2BA0eIct-0HJHpG9Qr39ff8T_e107okPL5zMfFyPDtfaLSxAxJEWPk7moJD0pNprjF7PP6LrGdaY'),
-                'client_assertion_type' => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
-            ]);
-            
-            if (!$tokenResponse->successful() || !isset($tokenResponse->json()['access_token'])) {
-                throw new \Exception('Failed to get SafeHaven access token');
-            }
-
-            $accessToken = $tokenResponse->json()['access_token'];
+            // Get cached or fresh SafeHaven access token
+            $accessToken = $this->getSafeHavenToken();
             
             // Determine meter type for SafeHaven
             $vendType = strtoupper($request->meter_type ?? 'PREPAID');
@@ -939,8 +839,16 @@ class MullaBillController extends Controller
             if ($safeHavenResponse->successful()) {
                 $safeHavenData = $safeHavenResponse->json();
                 
+                // Enhanced SafeHaven status verification
+                $safeHavenStatus = $safeHavenData['data']['status'] ?? null;
+                $statusCode = $safeHavenData['statusCode'] ?? null;
+                
                 // Check if SafeHaven transaction was actually successful
-                if (isset($safeHavenData['data']['status']) && $safeHavenData['data']['status'] === 'successful') {
+                // Handle various success indicators from SafeHaven API
+                if ($statusCode === 200 && 
+                    ($safeHavenStatus === 'successful' || $safeHavenStatus === 'success' || $safeHavenStatus === 'completed') && 
+                    isset($safeHavenData['data']['utilityToken']) && 
+                    !empty($safeHavenData['data']['utilityToken'])) {
                     // Update transaction with SafeHaven success
                     $txn = MullaUserTransactions::updateOrCreate(
                         [
@@ -1014,7 +922,8 @@ class MullaBillController extends Controller
                         'data' => $txn,
                         'provider' => 'safehaven'
                     ], 200);
-                } else if (isset($safeHavenData['data']['status']) && $safeHavenData['data']['status'] === 'pending') {
+                } else if ($statusCode === 200 && 
+                         ($safeHavenStatus === 'pending' || $safeHavenStatus === 'processing' || $safeHavenStatus === 'initiated')) {
                     // Handle SafeHaven pending transactions
                     $pendingTxn->update([
                         'bill_reference' => $safeHavenData['data']['reference'] ?? 'SH-PENDING-' . time(),
@@ -1044,20 +953,34 @@ class MullaBillController extends Controller
                         'provider' => 'safehaven'
                     ], 200);
                 } else {
-                    // Log SafeHaven transaction failure (successful HTTP but failed transaction)
-                    DiscordBots::dispatch([
-                        'message' => '❌ **SafeHaven transaction failed** - Service error',
-                        'details' => [
-                            'user_id' => Auth::id(),
-                            'email' => Auth::user()->email,
-                            'payment_ref' => $request->payment_reference,
-                            'transaction_status' => $safeHavenData['data']['status'] ?? 'N/A',
-                            'error_message' => $safeHavenData['message'] ?? 'Unknown error',
-                            'timestamp' => now()->toDateTimeString()
-                        ]
-                    ]);
+                    // Enhanced failure logging with detailed status information
+                    $failureDetails = [
+                        'user_id' => Auth::id(),
+                        'email' => Auth::user()->email,
+                        'payment_ref' => $request->payment_reference,
+                        'http_status_code' => $statusCode ?? 'N/A',
+                        'transaction_status' => $safeHavenStatus ?? 'N/A',
+                        'error_message' => $safeHavenData['message'] ?? 'Unknown error',
+                        'has_utility_token' => isset($safeHavenData['data']['utilityToken']) ? 'Yes' : 'No',
+                        'response_structure' => json_encode($safeHavenData, JSON_PRETTY_PRINT),
+                        'timestamp' => now()->toDateTimeString()
+                    ];
                     
-                    throw new \Exception('SafeHaven transaction failed: ' . ($safeHavenData['message'] ?? 'Unknown error'));
+                    // Handle specific known failure statuses
+                    if ($safeHavenStatus === 'failed' || $safeHavenStatus === 'error' || $safeHavenStatus === 'declined') {
+                        DiscordBots::dispatch([
+                            'message' => '❌ **SafeHaven transaction failed** - Known failure status',
+                            'details' => $failureDetails
+                        ]);
+                        throw new \Exception('SafeHaven transaction failed with status: ' . $safeHavenStatus);
+                    } else {
+                        // Unknown or unexpected status
+                        DiscordBots::dispatch([
+                            'message' => '⚠️ **SafeHaven unexpected status** - Manual review needed',
+                            'details' => $failureDetails
+                        ]);
+                        throw new \Exception('SafeHaven returned unexpected status: ' . ($safeHavenStatus ?? 'null') . '. Message: ' . ($safeHavenData['message'] ?? 'Unknown error'));
+                    }
                 }
             } else {
                 // Log detailed SafeHaven failure
@@ -1078,7 +1001,27 @@ class MullaBillController extends Controller
         } catch (\Exception $e) {
             // Both VTPass and SafeHaven failed - NOW refund user (this is the second failure)
             if ($request->fromWallet === true || $request->fromWallet === 'true') {
-                MullaUserWallets::where('user_id', Auth::id())->increment('balance', $request->amount);
+                try {
+                    // Use database transaction for atomic refund operation
+                    DB::transaction(function () use ($request) {
+                        $userWallet = MullaUserWallets::where('user_id', Auth::id())->lockForUpdate()->first();
+                        if ($userWallet) {
+                            $userWallet->increment('balance', $request->amount);
+                        }
+                    });
+                } catch (\Exception $refundException) {
+                    // Log refund failure but don't block the error response
+                    DiscordBots::dispatch([
+                        'message' => '🚨 **CRITICAL: Refund failed** - Manual intervention needed',
+                        'details' => [
+                            'user_id' => Auth::id(),
+                            'email' => Auth::user()->email,
+                            'amount_to_refund' => '₦' . number_format($request->amount),
+                            'refund_error' => $refundException->getMessage(),
+                            'timestamp' => now()->toDateTimeString()
+                        ]
+                    ]);
+                }
             }
             
             $pendingTxn->update([
@@ -1274,7 +1217,27 @@ class MullaBillController extends Controller
                 ]
             ]);
             MullaUserTransactions::where('id', $txn->id)->update(['vtp_status' => VTPEnums::REVERSED]);
-            MullaUserWallets::where('user_id', Auth::id())->increment('balance', $txn->amount);
+            try {
+                // Use database transaction for atomic refund operation
+                DB::transaction(function () use ($txn) {
+                    $userWallet = MullaUserWallets::where('user_id', Auth::id())->lockForUpdate()->first();
+                    if ($userWallet) {
+                        $userWallet->increment('balance', $txn->amount);
+                    }
+                });
+            } catch (\Exception $refundException) {
+                DiscordBots::dispatch([
+                    'message' => '🚨 **CRITICAL: Refund failed** - Manual intervention needed',
+                    'details' => [
+                        'user_id' => Auth::id(),
+                        'email' => Auth::user()->email,
+                        'amount_to_refund' => '₦' . number_format($txn->amount),
+                        'refund_error' => $refundException->getMessage(),
+                        'transaction_id' => $txn->id,
+                        'timestamp' => now()->toDateTimeString()
+                    ]
+                ]);
+            }
             return response(['message' => 'Transaction reversed.'], 400);
         } else if ($res->code === '099' && $res->response_description === 'TRANSACTION PROCESSING - PENDING') {
             return response(['message' => 'Transaction still processing. Please wait a few minutes and try again.'], 400);

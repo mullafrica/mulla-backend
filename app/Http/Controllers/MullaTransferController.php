@@ -133,7 +133,18 @@ class MullaTransferController extends Controller
                     ]
                 );
 
-                DiscordBots::dispatch(['message' => 'User (' . Auth::user()->email . ') just made a transfer (NGN' . ($request->amount) . ')']);
+                DiscordBots::dispatch([
+                    'message' => '💸 **Bank transfer successful**',
+                    'details' => [
+                        'user_id' => Auth::id(),
+                        'email' => Auth::user()->email,
+                        'amount' => '₦' . number_format($request->amount),
+                        'recipient_name' => $request->account_name,
+                        'recipient_bank' => $request->bank,
+                        'recipient_account' => $request->account_number,
+                        'timestamp' => now()->toDateTimeString()
+                    ]
+                ]);
 
                 // Send Email
                 Jobs::dispatch([
