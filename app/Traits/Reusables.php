@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Services\DiscordRateLimiterService;
 use GuzzleHttp\Client;
 use Stevebauman\Location\Facades\Location;
 use hisorange\BrowserDetect\Facade as Browser;
@@ -10,6 +11,16 @@ use Illuminate\Support\Facades\Http;
 trait Reusables
 {
     protected function sendToDiscord($message, $details = [])
+    {
+        $rateLimiter = app(DiscordRateLimiterService::class);
+        
+        $rateLimiter->queueMessage([
+            'message' => $message,
+            'details' => $details
+        ]);
+    }
+
+    protected function sendToDiscordDirect($message, $details = [])
     {
         $webhookUrl = env('DISCORD_WEBHOOK_URL');
 

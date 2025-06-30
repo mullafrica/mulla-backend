@@ -48,7 +48,8 @@ class DailySummaryCommand extends Command
             : 0;
             
         // Get service breakdown
-        $serviceBreakdown = $transactions->select('type')
+        $serviceBreakdown = MullaUserTransactions::whereDate('created_at', $date)
+            ->where('status', true)
             ->groupBy('type')
             ->selectRaw('type, count(*) as count, sum(amount) as volume')
             ->orderByDesc('count')
@@ -57,7 +58,9 @@ class DailySummaryCommand extends Command
         $topService = $serviceBreakdown->first();
         
         // Get provider breakdown for electricity
-        $providerBreakdown = $transactions->where('type', 'electricity')
+        $providerBreakdown = MullaUserTransactions::whereDate('created_at', $date)
+            ->where('status', true)
+            ->where('type', 'electricity')
             ->groupBy('provider')
             ->selectRaw('provider, count(*) as count')
             ->get();
@@ -66,7 +69,10 @@ class DailySummaryCommand extends Command
         $newUsers = User::whereDate('created_at', $date)->count();
         
         // Get active users (users who made transactions)
-        $activeUsers = $transactions->distinct('user_id')->count('user_id');
+        $activeUsers = MullaUserTransactions::whereDate('created_at', $date)
+            ->where('status', true)
+            ->distinct('user_id')
+            ->count('user_id');
         
         // Get failed transactions breakdown
         $failedTransactions = MullaUserTransactions::whereDate('created_at', $date)
@@ -76,10 +82,14 @@ class DailySummaryCommand extends Command
             ->get();
             
         // Get cashback given
-        $totalCashback = $transactions->sum('cashback');
+        $totalCashback = MullaUserTransactions::whereDate('created_at', $date)
+            ->where('status', true)
+            ->sum('cashback');
         
         // Top users by transaction volume
-        $topUsers = $transactions->groupBy('user_id')
+        $topUsers = MullaUserTransactions::whereDate('created_at', $date)
+            ->where('status', true)
+            ->groupBy('user_id')
             ->selectRaw('user_id, count(*) as transaction_count, sum(amount) as total_volume')
             ->orderByDesc('total_volume')
             ->limit(5)
@@ -112,25 +122,17 @@ class DailySummaryCommand extends Command
             'message' => '📊 DAILY SUMMARY - ' . $date->format('M d, Y'),
             'details' => [
                 'date' => $date->toDateString(),
-                'overview' => [
-                    'total_transactions' => number_format($totalTransactions),
-                    'total_volume' => '₦' . number_format($totalVolume),
-                    'success_rate' => $successRate . '%',
-                    'total_cashback' => '₦' . number_format($totalCashback),
-                    'new_users' => number_format($newUsers),
-                    'active_users' => number_format($activeUsers)
-                ],
-                'services' => [
-                    'top_service' => $topService ? $topService->type . ' (' . $topService->count . ' txns)' : 'None',
-                    'breakdown' => $serviceDetails ?: 'No transactions'
-                ],
-                'electricity_providers' => [
-                    'breakdown' => $providerDetails ?: 'No electricity transactions'
-                ],
-                'failures' => [
-                    'total_failed' => $allTransactions->count() - $totalTransactions,
-                    'breakdown' => $failureDetails ?: 'No failures'
-                ],
+                'total_transactions' => number_format($totalTransactions),
+                'total_volume' => '₦' . number_format($totalVolume),
+                'success_rate' => $successRate . '%',
+                'total_cashback' => '₦' . number_format($totalCashback),
+                'new_users' => number_format($newUsers),
+                'active_users' => number_format($activeUsers),
+                'top_service' => $topService ? $topService->type . ' (' . $topService->count . ' txns)' : 'None',
+                'service_breakdown' => $serviceDetails ?: 'No transactions',
+                'electricity_providers' => $providerDetails ?: 'No electricity transactions',
+                'total_failed' => $allTransactions->count() - $totalTransactions,
+                'failure_breakdown' => $failureDetails ?: 'No failures',
                 'top_users' => $topUsers->map(function ($user) {
                     return 'User ' . $user->user_id . ': ₦' . number_format($user->total_volume) . ' (' . $user->transaction_count . ' txns)';
                 })->take(3)->join(', ') ?: 'No active users',

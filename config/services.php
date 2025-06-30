@@ -35,4 +35,14 @@ return [
         'site_id'  => env('CUSTOMERIO_SITE_ID'),
         'api_key'  => env('CUSTOMERIO_API_KEY'),
     ],
+
+    'discord' => [
+        'webhook_url' => env('DISCORD_WEBHOOK_URL'),
+        'webhook_url_dev' => env('DISCORD_WEBHOOK_URL_DEV'),
+        'rate_limit' => [
+            'max_requests_per_minute' => env('DISCORD_RATE_LIMIT_MAX', 30),
+            'batch_size' => env('DISCORD_BATCH_SIZE', 10),
+            'batch_timeout_seconds' => env('DISCORD_BATCH_TIMEOUT', 5),
+        ],
+    ],
 ];

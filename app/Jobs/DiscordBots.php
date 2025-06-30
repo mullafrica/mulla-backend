@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Services\DiscordRateLimiterService;
 use App\Traits\Reusables;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -31,11 +32,14 @@ class DiscordBots implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(DiscordRateLimiterService $rateLimiter): void
     {
         $message = $this->data['message'] ?? 'Exception occured.';
         $details = $this->data['details'] ?? [];
         
-        $this->sendToDiscord($message, $details);
+        $rateLimiter->queueMessage([
+            'message' => $message,
+            'details' => $details
+        ]);
     }
 }
