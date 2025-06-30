@@ -61,7 +61,7 @@ class CustomerIoService
                     'data'  => $user
                 ]);
 
-            DiscordBots::dispatch(['message' => 'User (' . $user['email'] . ') event (' . $event . ') tracked in Customer.io']);
+            // DiscordBots::dispatch(['message' => 'User (' . $user['email'] . ') event (' . $event . ') tracked in Customer.io']);
         }
     }
 }
