@@ -624,11 +624,44 @@ class MullaBillController extends Controller
         if (isset($res->code) && !in_array($res->code, ['000', '099'])) {
             
             if ($this->isElectricity($request->serviceID)) {
-                // For electricity: Automatically attempt SafeHaven when VTPass fails
+                // For electricity: Check for duplicate transaction before attempting SafeHaven
                 
                 $errorCode = $res->code ?? 'N/A';
                 $errorMessage = $res->response_description ?? 'Unknown error';
                 
+                // Handle duplicate transaction error (code 019)
+                if ($errorCode === '019' || stripos($errorMessage, 'DUPLICATE TRANSACTION') !== false) {
+                    $pendingTxn->update([
+                        'vtp_status' => VTPEnums::PENDING,
+                        'status' => false,
+                        'provider' => 'vtpass',
+                        'notes' => 'VTPass duplicate transaction detected. Transaction may be processing.',
+                        'bill_reference' => $res->requestId ?? 'vtpass_duplicate_' . time()
+                    ]);
+                    
+                    DiscordBots::dispatch([
+                        'message' => '🔄 **VTPass duplicate transaction** - Not attempting SafeHaven',
+                        'details' => [
+                            'user_id' => Auth::id(),
+                            'email' => Auth::user()->email,
+                            'payment_ref' => $request->payment_reference,
+                            'service' => $request->serviceID,
+                            'amount' => '₦' . number_format($amount),
+                            'meter' => $request->billersCode,
+                            'vtpass_error' => $errorMessage,
+                            'vtpass_code' => $errorCode,
+                            'timestamp' => now()->toDateTimeString()
+                        ]
+                    ]);
+                    
+                    return response()->json([
+                        'message' => 'Your transaction is already being processed. Please wait a few minutes and check your transaction history.',
+                        'duplicate' => true,
+                        'transaction_id' => $pendingTxn->id
+                    ], 200);
+                }
+                
+                // For other VTPass failures: Automatically attempt SafeHaven
                 $pendingTxn->update([
                     'vtp_status' => VTPEnums::FAILED,
                     'status' => false,
