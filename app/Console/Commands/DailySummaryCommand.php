@@ -118,27 +118,27 @@ class DailySummaryCommand extends Command
         })->join(', ');
 
         // Send to Discord
-        DiscordBots::dispatch([
-            'message' => '📊 **Daily summary** - ' . $date->format('M d, Y'),
-            'details' => [
-                'date' => $date->toDateString(),
-                'total_transactions' => number_format($totalTransactions),
-                'total_volume' => '₦' . number_format($totalVolume),
-                'success_rate' => $successRate . '%',
-                'total_cashback' => '₦' . number_format($totalCashback),
-                'new_users' => number_format($newUsers),
-                'active_users' => number_format($activeUsers),
-                'top_service' => $topService ? $topService->type . ' (' . $topService->count . ' txns)' : 'None',
-                'service_breakdown' => $serviceDetails ?: 'No transactions',
-                'electricity_providers' => $providerDetails ?: 'No electricity transactions',
-                'total_failed' => $allTransactions->count() - $totalTransactions,
-                'failure_breakdown' => $failureDetails ?: 'No failures',
-                'top_users' => $topUsers->map(function ($user) {
-                    return 'User ' . $user->user_id . ': ₦' . number_format($user->total_volume) . ' (' . $user->transaction_count . ' txns)';
-                })->take(3)->join(', ') ?: 'No active users',
-                'generated_at' => now()->toDateTimeString()
-            ]
-        ]);
+        // DiscordBots::dispatch([
+        //     'message' => '📊 **Daily summary** - ' . $date->format('M d, Y'),
+        //     'details' => [
+        //         'date' => $date->toDateString(),
+        //         'total_transactions' => number_format($totalTransactions),
+        //         'total_volume' => '₦' . number_format($totalVolume),
+        //         'success_rate' => $successRate . '%',
+        //         'total_cashback' => '₦' . number_format($totalCashback),
+        //         'new_users' => number_format($newUsers),
+        //         'active_users' => number_format($activeUsers),
+        //         'top_service' => $topService ? $topService->type . ' (' . $topService->count . ' txns)' : 'None',
+        //         'service_breakdown' => $serviceDetails ?: 'No transactions',
+        //         'electricity_providers' => $providerDetails ?: 'No electricity transactions',
+        //         'total_failed' => $allTransactions->count() - $totalTransactions,
+        //         'failure_breakdown' => $failureDetails ?: 'No failures',
+        //         'top_users' => $topUsers->map(function ($user) {
+        //             return 'User ' . $user->user_id . ': ₦' . number_format($user->total_volume) . ' (' . $user->transaction_count . ' txns)';
+        //         })->take(3)->join(', ') ?: 'No active users',
+        //         'generated_at' => now()->toDateTimeString()
+        //     ]
+        // ]);
         
         $this->info("Daily summary sent to Discord successfully!");
         

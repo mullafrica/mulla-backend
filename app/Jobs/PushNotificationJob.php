@@ -28,14 +28,14 @@ class PushNotificationJob implements ShouldQueue
     public function handle(): void
     {
         $response = Http::post('https://exp.host/--/api/v2/push/send', $this->data);
-        DiscordBots::dispatch([
-            'message' => '📱 **Push notification sent**',
-            'details' => [
-                'status_code' => $response->status(),
-                'response_body' => $response->body(),
-                'notification_data' => $this->data,
-                'timestamp' => now()->toDateTimeString()
-            ]
-        ]);
+        // DiscordBots::dispatch([
+        //     'message' => '📱 **Push notification sent**',
+        //     'details' => [
+        //         'status_code' => $response->status(),
+        //         'response_body' => $response->body(),
+        //         'notification_data' => $this->data,
+        //         'timestamp' => now()->toDateTimeString()
+        //     ]
+        // ]);
     }
 }
