@@ -155,11 +155,21 @@ class BulkTransferService implements IBulkTransferService
         $response = $pt_customer->json();
 
         if ($response['status'] === false) {
-            $this->sendToDiscord('Business with (ID- ' . Auth::user()->id . ') initiated transfer failed: ' . $response['message']);
+            $this->sendToDiscordBatched('💼 **Business bulk transfer failed**', [
+                'business_id' => Auth::user()->id,
+                'email' => Auth::user()->email ?? 'N/A',
+                'error_message' => $response['message'],
+                'timestamp' => now()->toDateTimeString()
+            ]);
             return false;
         }
 
-        $this->sendToDiscord('Business with (ID- ' . Auth::user()->id . ') has initiated a transfer: ' . $response['message']);
+        $this->sendToDiscordBatched('💼 **Business bulk transfer initiated**', [
+            'business_id' => Auth::user()->id,
+            'email' => Auth::user()->email ?? 'N/A',
+            'success_message' => $response['message'],
+            'timestamp' => now()->toDateTimeString()
+        ]);
         
         return true;
     }

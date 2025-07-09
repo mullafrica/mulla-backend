@@ -44,7 +44,7 @@ class Handler extends ExceptionHandler
             $request = request();
             
             \App\Jobs\DiscordBots::dispatch([
-                'message' => '🚨 **System Error**',
+                'message' => '🚨 **System error**',
                 'details' => [
                     'error_type' => get_class($e),
                     'message' => $e->getMessage(),

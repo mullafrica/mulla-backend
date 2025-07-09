@@ -52,10 +52,23 @@ class VirtualAccount implements IVirtualAccount
         ]);
 
         if ($pt_account->successful()) {
-            $this->sendToDiscord('DVA created for ' . $data['firstname'] . ' (ID:' . $data['user_id'] . ')');
+            $this->sendToDiscord('📱 **Virtual account created successfully**', [
+                'user_id' => $data['user_id'],
+                'firstname' => $data['firstname'],
+                'lastname' => $data['lastname'] ?? 'N/A',
+                'email' => $data['email'] ?? 'N/A',
+                'timestamp' => now()->toDateTimeString()
+            ]);
             return true;
         } else {
-            $this->sendToDiscord('An error occured while creating DVA for ' . $data['firstname'] . ' (ID:' . $data['user_id'] . ')');
+            $this->sendToDiscord('📱 **Virtual account creation failed**', [
+                'user_id' => $data['user_id'],
+                'firstname' => $data['firstname'],
+                'lastname' => $data['lastname'] ?? 'N/A',
+                'email' => $data['email'] ?? 'N/A',
+                'error' => 'DVA creation failed',
+                'timestamp' => now()->toDateTimeString()
+            ]);
             return false;
         }
     }

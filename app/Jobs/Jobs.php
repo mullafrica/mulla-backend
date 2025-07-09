@@ -62,8 +62,23 @@ class Jobs implements ShouldQueue
                     'bank_code' => $this->data['bank_code'],
                 ]);
 
-            $this->sendToDiscord('BVN validation in progress.' . ' (ID:' . $this->data['firstname'] . ' ' . $this->data['lastname'] . ' (pt->' . json_encode($response->json()) . ')');
-            $this->sendToDiscord('Internal name validation in progress.');
+            $this->sendToDiscord('🔍 **BVN validation in progress**', [
+                'user_id' => $this->data['user_id'],
+                'firstname' => $this->data['firstname'],
+                'lastname' => $this->data['lastname'],
+                'email' => $this->data['email'] ?? 'N/A',
+                'bvn' => substr($this->data['bvn'], 0, 4) . '****' . substr($this->data['bvn'], -3),
+                'paystack_response' => $response->json(),
+                'timestamp' => now()->toDateTimeString()
+            ]);
+            $this->sendToDiscord('🔍 **Internal name validation in progress**', [
+                'user_id' => $this->data['user_id'],
+                'firstname' => $this->data['firstname'],
+                'lastname' => $this->data['lastname'],
+                'email' => $this->data['email'] ?? 'N/A',
+                'phone' => $this->data['phone'] ?? 'N/A',
+                'timestamp' => now()->toDateTimeString()
+            ]);
 
             $cs->resolveAccount([
                 'user_id' => $this->data['user_id'],

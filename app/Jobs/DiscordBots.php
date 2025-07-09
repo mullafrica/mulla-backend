@@ -15,6 +15,7 @@ class DiscordBots implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, Reusables;
 
     public $data;
+    public $useBatching;
     
     // Job configuration to prevent infinite retries
     public $tries = 3;
@@ -24,9 +25,10 @@ class DiscordBots implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct($data)
+    public function __construct($data, $useBatching = false)
     {
         $this->data = $data;
+        $this->useBatching = $useBatching;
     }
 
     /**
@@ -37,9 +39,15 @@ class DiscordBots implements ShouldQueue
         $message = $this->data['message'] ?? 'Exception occured.';
         $details = $this->data['details'] ?? [];
         
-        $rateLimiter->queueMessage([
-            'message' => $message,
-            'details' => $details
-        ]);
+        if ($this->useBatching) {
+            // Use batching system for bulk transfers
+            $rateLimiter->queueMessage([
+                'message' => $message,
+                'details' => $details
+            ]);
+        } else {
+            // Send immediately without batching
+            $this->sendToDiscordDirect($message, $details);
+        }
     }
 }

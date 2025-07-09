@@ -10,13 +10,7 @@ use App\Jobs\ProcessDiscordBatch;
 
 class DiscordRateLimiterService
 {
-    private const RATE_LIMIT_KEY = 'discord_rate_limit';
     private const BATCH_KEY = 'discord_batch_messages';
-
-    private function getMaxRequestsPerMinute(): int
-    {
-        return config('services.discord.rate_limit.max_requests_per_minute', 30);
-    }
 
     private function getBatchSize(): int
     {
@@ -75,35 +69,9 @@ class DiscordRateLimiterService
         Cache::forget(self::BATCH_KEY);
         Cache::forget('discord_batch_scheduled');
 
-        if (!$this->canSendMessage()) {
-            $this->requeueBatch($batchMessages);
-            return;
-        }
-
         $this->sendBatchToDiscord($batchMessages);
-        $this->incrementRateLimit();
     }
 
-    private function canSendMessage(): bool
-    {
-        $currentCount = Cache::get(self::RATE_LIMIT_KEY, 0);
-        return $currentCount < $this->getMaxRequestsPerMinute();
-    }
-
-    private function incrementRateLimit(): void
-    {
-        $currentCount = Cache::get(self::RATE_LIMIT_KEY, 0);
-        Cache::put(self::RATE_LIMIT_KEY, $currentCount + 1, now()->addMinute());
-    }
-
-    private function requeueBatch(array $messages): void
-    {
-        $existingBatch = Cache::get(self::BATCH_KEY, []);
-        $mergedBatch = array_merge($messages, $existingBatch);
-        Cache::put(self::BATCH_KEY, $mergedBatch, now()->addMinutes(10));
-
-        ProcessDiscordBatch::dispatch()->delay(now()->addMinute());
-    }
 
     private function sendBatchToDiscord(array $messages): void
     {
@@ -125,10 +93,6 @@ class DiscordRateLimiterService
                 'error' => $e->getMessage(),
                 'messages_count' => count($messages)
             ]);
-
-            if ($this->isRateLimitError($e)) {
-                $this->handleRateLimit($messages);
-            }
         }
     }
 
@@ -212,30 +176,13 @@ class DiscordRateLimiterService
         return $webhookUrl;
     }
 
-    private function isRateLimitError(\Exception $e): bool
-    {
-        return str_contains($e->getMessage(), '429') || 
-               str_contains($e->getMessage(), 'rate limit') ||
-               str_contains($e->getMessage(), 'Too Many Requests');
-    }
 
-    private function handleRateLimit(array $messages): void
-    {
-        Log::warning('Discord rate limit hit, requeueing messages', [
-            'messages_count' => count($messages)
-        ]);
-
-        Cache::put(self::RATE_LIMIT_KEY, $this->getMaxRequestsPerMinute(), now()->addMinutes(2));
-        $this->requeueBatch($messages);
-    }
-
-    public function getRateLimitStatus(): array
+    public function getBatchStatus(): array
     {
         return [
-            'current_count' => Cache::get(self::RATE_LIMIT_KEY, 0),
-            'max_per_minute' => $this->getMaxRequestsPerMinute(),
             'batch_queue_size' => count(Cache::get(self::BATCH_KEY, [])),
-            'can_send' => $this->canSendMessage()
+            'batch_size' => $this->getBatchSize(),
+            'batch_timeout_seconds' => $this->getBatchTimeoutSeconds()
         ];
     }
 }

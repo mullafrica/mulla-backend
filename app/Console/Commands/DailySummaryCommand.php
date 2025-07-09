@@ -119,7 +119,7 @@ class DailySummaryCommand extends Command
 
         // Send to Discord
         DiscordBots::dispatch([
-            'message' => '📊 DAILY SUMMARY - ' . $date->format('M d, Y'),
+            'message' => '📊 **Daily summary** - ' . $date->format('M d, Y'),
             'details' => [
                 'date' => $date->toDateString(),
                 'total_transactions' => number_format($totalTransactions),

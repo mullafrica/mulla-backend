@@ -12,6 +12,13 @@ trait Reusables
 {
     protected function sendToDiscord($message, $details = [])
     {
+        // Send immediately without batching
+        $this->sendToDiscordDirect($message, $details);
+    }
+
+    protected function sendToDiscordBatched($message, $details = [])
+    {
+        // Use batching system for bulk transfers
         $rateLimiter = app(DiscordRateLimiterService::class);
         
         $rateLimiter->queueMessage([

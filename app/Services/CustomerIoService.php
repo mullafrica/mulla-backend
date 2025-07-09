@@ -39,7 +39,16 @@ class CustomerIoService
                     'created_at' => strtotime($user['created_at']),
                 ]);
 
-            DiscordBots::dispatch(['message' => 'User identified in Customer.io']);
+            DiscordBots::dispatch([
+                'message' => '📧 **User identified in Customer.io**',
+                'details' => [
+                    'user_id' => $user['id'] ?? 'N/A',
+                    'email' => $user['email'],
+                    'firstname' => $user['firstname'] ?? 'N/A',
+                    'lastname' => $user['lastname'] ?? 'N/A',
+                    'timestamp' => now()->toDateTimeString()
+                ]
+            ]);
         }
     }
 
@@ -61,7 +70,17 @@ class CustomerIoService
                     'data'  => $user
                 ]);
 
-            // DiscordBots::dispatch(['message' => 'User (' . $user['email'] . ') event (' . $event . ') tracked in Customer.io']);
+            DiscordBots::dispatch([
+                'message' => '📧 **Event tracked in Customer.io**',
+                'details' => [
+                    'user_id' => $user['id'] ?? 'N/A',
+                    'email' => $user['email'],
+                    'event_name' => $event,
+                    'firstname' => $user['firstname'] ?? 'N/A',
+                    'lastname' => $user['lastname'] ?? 'N/A',
+                    'timestamp' => now()->toDateTimeString()
+                ]
+            ]);
         }
     }
 }
